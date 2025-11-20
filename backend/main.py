@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime ,timedelta
-from jose import JWTError ,jwt
+from jose import JWTError ,jwt,ExpiredSignatureError
 from passlib.context import CryptContext
 from prisma import Prisma
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -27,6 +27,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 origins = [
     "http://localhost:5173",
+    "http://localhost:5174",
     "http://localhost:3000"
     #
 ]
@@ -84,6 +85,8 @@ async def get_user_token(credentials:HTTPAuthorizationCredentials=Depends(securi
         if user is None:
             raise HTTPException(tatus_code=401, detail="User not found")
         return user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
     except JWTError:
          raise HTTPException(status_code=401, detail="Invalid token")
     

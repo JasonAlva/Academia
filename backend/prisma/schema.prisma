@@ -12,7 +12,7 @@ model User {
     id String @id @default(cuid())
     email String @unique
     password String 
-    role Role @default(STUDENT)
+    role Role 
     name String
     createdAt DateTime @default(now())
 
