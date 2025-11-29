@@ -38,8 +38,6 @@ model Student {
   phoneNumber     String?
   address         String?
   dateOfBirth     DateTime?
-  guardianName    String?
-  guardianContact String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   enrollments     Enrollment[]

@@ -8,6 +8,7 @@ yarn-error.log*
 package-lock.json
 pnpm-lock.yaml
 
+backend-1/
 # Build output
 dist/
 build/
