@@ -24,7 +24,7 @@ services:
     environment:
       DATABASE_URL: "postgresql://postgres:1117@postgres:5432/college_query_system"
       JWT_SECRET: "mysecretkey"
-      GOOGLE_API_KEY: "AIzaSyCUNwqrgcr2q4GN5FKgeJ0fzUNCi4Zxyb0"
+
     ports:
       - "8000:8000"
     depends_on:

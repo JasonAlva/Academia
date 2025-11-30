@@ -136,6 +136,13 @@ class ChatMessageBase(BaseModel):
     tokensUsed: Optional[int] = None
     responseTime: Optional[float] = None
 
+class UserOut(UserBase):
+    id: str
+    createdAt: datetime
+
+    class Config:
+        orm_mode = True
+
 class ChatMessageCreate(ChatMessageBase):
     pass
 
