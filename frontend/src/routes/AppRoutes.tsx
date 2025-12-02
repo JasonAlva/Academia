@@ -5,13 +5,28 @@ import ProtectedRoute from "@/auth/ProtectedRoutes";
 
 import AuthForm from "@/pages/auth/AuthForm";
 
-import StudentDashboard from "@/pages/dashboard/student";
-import TeacherDashboard from "@/pages/dashboard/teacher";
-import AdminDashboard from "@/pages/dashboard/admin";
-
 import ChatPage from "@/features/chat/ChatPage";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
+
 import UnauthorizedPage from "../pages/errors/Unauthorized.tsx";
+
+// Import Dashboard Pages
+import StudentDashboard from "@/pages/student/StudentDashboard";
+import TeacherDashboard from "@/pages/teacher/TeacherDashboard";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+
+// Import Admin Feature Pages
+import DepartmentsPage from "@/features/admin/DepartmentsPage";
+import AdminStudentsPage from "@/features/admin/StudentsPage";
+import AnalyticsPage from "@/features/admin/AnalyticsPage";
+
+// Import Teacher Feature Pages
+import TeacherCoursesPage from "@/features/teacher/CoursesPage";
+import TeacherAttendancePage from "@/features/teacher/AttendancePage";
+
+// Import Student Feature Pages
+import StudentCoursesPage from "@/features/student/CoursesPage";
+import StudentGradesPage from "@/features/student/GradesPage";
+import DashboardRoutes from "@/layout/DashboardRoutes.tsx";
 
 // ----------------------
 // Login Page
@@ -36,9 +51,9 @@ function RoleDashboard() {
 
   const role = user.role?.toLowerCase();
 
-  if (role === "student") return <Navigate to="/dashboard/student" replace />;
-  if (role === "teacher") return <Navigate to="/dashboard/teacher" replace />;
-  if (role === "admin") return <Navigate to="/dashboard/admin" replace />;
+  if (role === "student") return <Navigate to="/student/dashboard" replace />;
+  if (role === "teacher") return <Navigate to="/teacher/dashboard" replace />;
+  if (role === "admin") return <Navigate to="/admin/dashboard" replace />;
 
   return <Navigate to="/login" replace />;
 }
@@ -46,60 +61,103 @@ function RoleDashboard() {
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* Public Route */}
+      {/* Public Routes */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-      {/* Default redirect */}
+      {/* Default redirect for / */}
       <Route path="/" element={<RoleDashboard />} />
 
-      {/* Dashboards */}
-      <Route
-        path="/dashboard/student"
-        element={
-          <ProtectedRoute allowed={["student"]}>
-            <DashboardLayout role="student">
+      {/* Dashboard Layout with Protected Child Routes */}
+      <Route element={<DashboardRoutes />}>
+        {/* STUDENT ROUTES */}
+        <Route
+          path="/student/dashboard"
+          element={
+            <ProtectedRoute allowed={["student"]}>
               <StudentDashboard />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/courses"
+          element={
+            <ProtectedRoute allowed={["student"]}>
+              <StudentCoursesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/grades"
+          element={
+            <ProtectedRoute allowed={["student"]}>
+              <StudentGradesPage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/dashboard/teacher"
-        element={
-          <ProtectedRoute allowed={["teacher", "instructor"]}>
-            <DashboardLayout role="teacher">
+        {/* TEACHER ROUTES */}
+        <Route
+          path="/teacher/dashboard"
+          element={
+            <ProtectedRoute allowed={["teacher"]}>
               <TeacherDashboard />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/courses"
+          element={
+            <ProtectedRoute allowed={["teacher"]}>
+              <TeacherCoursesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/attendance"
+          element={
+            <ProtectedRoute allowed={["teacher"]}>
+              <TeacherAttendancePage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/dashboard/admin"
-        element={
-          <ProtectedRoute allowed={["admin"]}>
-            <DashboardLayout role="admin">
+        {/* ADMIN ROUTES */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute allowed={["admin"]}>
               <AdminDashboard />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/departments"
+          element={
+            <ProtectedRoute allowed={["admin"]}>
+              <DepartmentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/students"
+          element={
+            <ProtectedRoute allowed={["admin"]}>
+              <AdminStudentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/analytics"
+          element={
+            <ProtectedRoute allowed={["admin"]}>
+              <AnalyticsPage />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
 
-      {/* Chat */}
-      <Route
-        path="/dashboard/chat"
-        element={
-          <ProtectedRoute
-            allowed={["student", "teacher", "instructor", "admin"]}
-          >
-            <DashboardLayout role="common">
-              <ChatPage />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/unauthorized" element={<UnauthorizedPage />} />
+      {/* Catch-all redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
