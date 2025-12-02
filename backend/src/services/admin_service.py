@@ -5,21 +5,21 @@ from src.models.schemas import AdminCreate, AdminUpdate, AdminOut
 from src.utils.password import hash_password
 
 class AdminService:
-    def __init__(self, prisma: Prisma):
-        self.prisma = prisma
+    def __init__(self, db: db):
+        self.db = db
 
     async def create_admin(self, admin_data: AdminCreate) -> AdminOut:
         """Create a new admin with user account"""
         try:
             # Check if email already exists
-            existing_user = await self.prisma.user.find_unique(
+            existing_user = await self.db.user.find_unique(
                 where={"email": admin_data.email}
             )
             if existing_user:
                 raise HTTPException(status_code=400, detail="Email already registered")
 
             # Check if adminId already exists
-            existing_admin = await self.prisma.admin.find_unique(
+            existing_admin = await self.db.admin.find_unique(
                 where={"adminId": admin_data.adminId}
             )
             if existing_admin:
@@ -29,7 +29,7 @@ class AdminService:
             hashed_password = hash_password(admin_data.password)
 
             # Create admin with user
-            admin = await self.prisma.admin.create(
+            admin = await self.db.admin.create(
                 data={
                     "adminId": admin_data.adminId,
                     "user": {
@@ -53,7 +53,7 @@ class AdminService:
         """Update admin information"""
         try:
             # Check if admin exists
-            existing_admin = await self.prisma.admin.find_unique(
+            existing_admin = await self.db.admin.find_unique(
                 where={"id": admin_id},
                 include={"user": True}
             )
@@ -62,7 +62,7 @@ class AdminService:
 
             # Check if email is being changed and if it's already taken
             if admin_data.email and admin_data.email != existing_admin.user.email:
-                email_exists = await self.prisma.user.find_unique(
+                email_exists = await self.db.user.find_unique(
                     where={"email": admin_data.email}
                 )
                 if email_exists:
@@ -76,7 +76,7 @@ class AdminService:
                 user_update_data["name"] = admin_data.name
 
             # Update admin
-            admin = await self.prisma.admin.update(
+            admin = await self.db.admin.update(
                 where={"id": admin_id},
                 data={
                     "user": {
@@ -93,7 +93,7 @@ class AdminService:
 
     async def get_admin(self, admin_id: str) -> AdminOut:
         """Get admin by ID"""
-        admin = await self.prisma.admin.find_unique(
+        admin = await self.db.admin.find_unique(
             where={"id": admin_id},
             include={"user": True}
         )
@@ -103,7 +103,7 @@ class AdminService:
 
     async def get_admin_by_user_id(self, user_id: str) -> Optional[AdminOut]:
         """Get admin by user ID"""
-        admin = await self.prisma.admin.find_unique(
+        admin = await self.db.admin.find_unique(
             where={"userId": user_id},
             include={"user": True}
         )
@@ -111,7 +111,7 @@ class AdminService:
 
     async def get_admin_by_admin_id(self, admin_id_str: str) -> Optional[AdminOut]:
         """Get admin by adminId (e.g., 'ADM2024001')"""
-        admin = await self.prisma.admin.find_unique(
+        admin = await self.db.admin.find_unique(
             where={"adminId": admin_id_str},
             include={"user": True}
         )
@@ -119,7 +119,7 @@ class AdminService:
 
     async def list_admins(self, skip: int = 0, limit: int = 100) -> List[AdminOut]:
         """List all admins with pagination"""
-        return await self.prisma.admin.find_many(
+        return await self.db.admin.find_many(
             skip=skip,
             take=limit,
             include={"user": True},
@@ -129,11 +129,11 @@ class AdminService:
     async def delete_admin(self, admin_id: str) -> bool:
         """Delete an admin (cascades to user)"""
         try:
-            admin = await self.prisma.admin.find_unique(where={"id": admin_id})
+            admin = await self.db.admin.find_unique(where={"id": admin_id})
             if not admin:
                 raise HTTPException(status_code=404, detail="Admin not found")
 
-            await self.prisma.admin.delete(where={"id": admin_id})
+            await self.db.admin.delete(where={"id": admin_id})
             return True
         except HTTPException:
             raise
@@ -142,4 +142,4 @@ class AdminService:
 
     async def count_admins(self) -> int:
         """Get total count of admins"""
-        return await self.prisma.admin.count()
+        return await self.db.admin.count()

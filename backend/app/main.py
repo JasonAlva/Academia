@@ -2,7 +2,7 @@ from fastapi import FastAPI ,Depends ,HTTPException ,status
 from fastapi.security import HTTPBearer ,HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Literal
 from datetime import datetime ,timedelta
 from jose import JWTError ,jwt,ExpiredSignatureError
 from passlib.context import CryptContext
@@ -17,7 +17,11 @@ from dotenv import load_dotenv
 
 current_dir = Path(__file__).resolve().parent 
 root_dir = current_dir.parent
-env_path = root_dir / ".env"
+env_path = current_dir / ".env"  # Load from app directory first
+
+# Fallback to parent .env if app .env doesn't exist
+if not env_path.exists():
+    env_path = root_dir / ".env"
 
 load_dotenv(dotenv_path=env_path)
 
@@ -57,7 +61,7 @@ class UserCreate(BaseModel):
     email:str
     password:str
     name:str
-    role:str="STUDENT"
+    role:Literal["STUDENT", "ADMIN", "FACULTY"]="STUDENT"
 
 
 class UserLogin(BaseModel):

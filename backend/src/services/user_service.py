@@ -13,6 +13,10 @@ class UserService:
     async def get_user(self, user_id: str) -> Optional[UserOut]:
         user = await self.db.user.find_unique(where={"id": user_id})
         return UserOut.from_orm(user) if user else None
+    
+    async def get_user_email(self, user_email: str) -> Optional[UserOut]:
+        user = await self.db.user.find_unique(where={"email": user_email})
+        return UserOut.from_orm(user) if user else None
 
     async def update_user(self, user_id: str, user_data: UserUpdate) -> Optional[UserOut]:
         user = await self.db.user.update(

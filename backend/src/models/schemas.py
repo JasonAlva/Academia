@@ -255,6 +255,7 @@ class AttendanceCreate(AttendanceBase):
 class AttendanceUpdate(BaseModel):
     status: Optional[str] = None
     remarks: Optional[str] = None
+    date: Optional[datetime] = None
 
 class AttendanceResponse(AttendanceBase):
     id: str

@@ -1,0 +1,43 @@
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:1117@localhost:5432/college_query_system"
+}
+
+generator client {
+  provider             = "prisma-client-py"
+  recursive_type_depth = 5
+  interface            = "asyncio"
+}
+
+model User {
+  id               String           @id @default(cuid())
+  email            String           @unique
+  password         String
+  name             String
+  role             String           @default("STUDENT")
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  timetableEntries TimetableEntry[]
+
+  @@map("users")
+}
+
+model TimetableEntry {
+  id         String   @id @default(cuid())
+  userId     String
+  courseName String
+  courseCode String
+  instructor String
+  dayOfWeek  String
+  startTime  String
+  endTime    String
+  room       String
+  type       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([dayOfWeek])
+  @@map("timetable_entries")
+}

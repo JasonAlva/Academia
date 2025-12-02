@@ -1,15 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.api.routes
-from src.config.database import connect_to_database
 from contextlib import asynccontextmanager
-from src.config.database import connect_to_database,disconnect_to_database
+from src.config.database import connect_db,disconnect_db
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
-    await connect_to_database()
+    await connect_db()
     yield
-    await disconnect_to_database()
+    await disconnect_db()
 
 app=FastAPI(lifespan=lifespan)
 
