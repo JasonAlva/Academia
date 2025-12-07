@@ -83,9 +83,9 @@ class AuthService:
             return None
         return UserOut.model_validate(user)
 
-    def create_access_token(self, email: str) -> str:
+    def create_access_token(self, user_id: str) -> str:
         return create_access_token(
-            {"sub": email},
+            {"sub": user_id},
             expires_delta=timedelta(minutes=30)
         )
 

@@ -1,4 +1,4 @@
-import { apiClient } from "./api";
+import { useApiClient } from "./api";
 
 export interface Student {
   id: string;
@@ -29,24 +29,24 @@ export interface StudentUpdate {
   dateOfBirth?: string;
 }
 
-export const studentService = {
-  async getAll(skip = 0, limit = 100): Promise<Student[]> {
-    return apiClient.get(`/students?skip=${skip}&limit=${limit}`);
-  },
+// Hook-based service
+export const useStudentService = () => {
+  const apiClient = useApiClient();
 
-  async getById(id: string): Promise<Student> {
-    return apiClient.get(`/students/${id}`);
-  },
+  return {
+    getAll: async (skip = 0, limit = 100): Promise<Student[]> =>
+      apiClient.get(`/students?skip=${skip}&limit=${limit}`),
 
-  async create(data: Partial<Student>): Promise<Student> {
-    return apiClient.post("/students", data);
-  },
+    getById: async (id: string): Promise<Student> =>
+      apiClient.get(`/students/${id}`),
 
-  async update(id: string, data: StudentUpdate): Promise<Student> {
-    return apiClient.put(`/students/${id}`, data);
-  },
+    create: async (data: Partial<Student>): Promise<Student> =>
+      apiClient.post("/students", data),
 
-  async delete(id: string): Promise<void> {
-    return apiClient.delete(`/students/${id}`);
-  },
+    update: async (id: string, data: StudentUpdate): Promise<Student> =>
+      apiClient.put(`/students/${id}`, data),
+
+    delete: async (id: string): Promise<void> =>
+      apiClient.delete(`/students/${id}`),
+  };
 };

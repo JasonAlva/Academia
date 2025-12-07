@@ -16,6 +16,7 @@ async def get_current_user(db:Prisma=Depends(get_db),credentials:HTTPAuthorizati
     try:
         payload=verify_token(token)
         user_id=payload.get("sub")
+        print(user_id)
 
         if user_id is None:
             raise HTTPException(
@@ -24,8 +25,9 @@ async def get_current_user(db:Prisma=Depends(get_db),credentials:HTTPAuthorizati
             )
         
         user_service=UserService(db)
+        
         user=await user_service.get_user(user_id)
-
+        
         if user is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

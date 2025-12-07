@@ -14,6 +14,9 @@ const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
 const DepartmentsPage = lazy(() => import("@/features/admin/DepartmentsPage"));
 const AdminStudentsPage = lazy(() => import("@/features/admin/StudentsPage"));
 const AnalyticsPage = lazy(() => import("@/features/admin/AnalyticsPage"));
+const TimeTablesPage = lazy(
+  () => import("@/features/timetable/TimeTablesPage")
+);
 
 export const adminRoutes = [
   {
@@ -35,6 +38,11 @@ export const adminRoutes = [
     path: "/admin/analytics",
     element: AnalyticsPage,
     title: "Analytics",
+  },
+  {
+    path: "/admin/timetable",
+    element: TimeTablesPage,
+    title: "Timetable",
   },
   // Add more admin routes here:
   // {

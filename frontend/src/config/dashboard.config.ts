@@ -81,6 +81,11 @@ const adminConfig: Omit<DashboardConfig, "user"> = {
       icon: IconCalendar,
     },
     {
+      title: "Timetable",
+      url: "/admin/timetable",
+      icon: IconCalendar,
+    },
+    {
       title: "Analytics",
       url: "/admin/analytics",
       icon: IconChartBar,

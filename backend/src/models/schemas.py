@@ -82,6 +82,24 @@ class StudentResponse(StudentBase):
         from_attributes = True
         populate_by_name = True
 
+#student with nested user
+class StudentOut(BaseModel):
+    id: str
+    userId: str
+    studentId: str
+    department: str
+    semester: int
+    batch: str
+    phoneNumber: Optional[str] = None
+    address: Optional[str] = None
+    dateOfBirth: Optional[datetime] = None
+    createdAt: datetime
+    updatedAt: datetime
+    user: Optional[UserOut] = None
+
+    class Config:
+        from_attributes = True
+
 # Teacher Schemas
 class TeacherBase(BaseModel):
     teacher_id: str = Field(alias="teacherId")
@@ -114,6 +132,26 @@ class TeacherResponse(TeacherBase):
     class Config:
         from_attributes = True
         populate_by_name = True
+
+#teacher with nested user
+class TeacherOut(BaseModel):
+    id: str
+    userId: str
+    teacherId: str
+    department: str
+    designation: str
+    specialization: Optional[str] = None
+    phoneNumber: Optional[str] = None
+    officeRoom: Optional[str] = None
+    officeHours: Optional[str] = None
+    joiningDate: Optional[datetime] = None
+    createdAt: datetime
+    updatedAt: datetime
+    user: Optional[UserOut] = None   # nested user object
+
+    class Config:
+        from_attributes = True
+
 
 # Admin Schemas
 class AdminBase(BaseModel):

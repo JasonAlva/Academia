@@ -1,4 +1,4 @@
-import { apiClient } from "./api";
+import { useApiClient } from "./api";
 
 export interface Course {
   id: string;
@@ -16,24 +16,23 @@ export interface Course {
   updatedAt: string;
 }
 
-export const courseService = {
-  async getAll(): Promise<Course[]> {
-    return apiClient.get("/courses");
-  },
+// Hook-based service
+export const useCourseService = () => {
+  const apiClient = useApiClient();
 
-  async getById(id: string): Promise<Course> {
-    return apiClient.get(`/courses/${id}`);
-  },
+  return {
+    getAll: async (): Promise<Course[]> => apiClient.get("/courses"),
 
-  async create(data: Partial<Course>): Promise<Course> {
-    return apiClient.post("/courses", data);
-  },
+    getById: async (id: string): Promise<Course> =>
+      apiClient.get(`/courses/${id}`),
 
-  async update(id: string, data: Partial<Course>): Promise<Course> {
-    return apiClient.put(`/courses/${id}`, data);
-  },
+    create: async (data: Partial<Course>): Promise<Course> =>
+      apiClient.post("/courses", data),
 
-  async delete(id: string): Promise<void> {
-    return apiClient.delete(`/courses/${id}`);
-  },
+    update: async (id: string, data: Partial<Course>): Promise<Course> =>
+      apiClient.put(`/courses/${id}`, data),
+
+    delete: async (id: string): Promise<void> =>
+      apiClient.delete(`/courses/${id}`),
+  };
 };

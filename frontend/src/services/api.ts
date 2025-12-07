@@ -1,56 +1,31 @@
+
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
-export const apiClient = {
-  async get(endpoint: string) {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      headers: {
-        Authorization: token ? `Bearer ${token}` : "",
-        "Content-Type": "application/json",
-      },
-    });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return response.json();
-  },
+export const useApiClient = () => {
+  const token = localStorage.getItem("token");
 
-  async post(endpoint: string, data: any) {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      method: "POST",
-      headers: {
-        Authorization: token ? `Bearer ${token}` : "",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return response.json();
-  },
+  const request = async (endpoint: string, options: RequestInit = {}) => {
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: token ? `Bearer ${token}` : "",
+      ...options.headers,
+    };
 
-  async put(endpoint: string, data: any) {
-    const token = localStorage.getItem("token");
     const response = await fetch(`${API_URL}${endpoint}`, {
-      method: "PUT",
-      headers: {
-        Authorization: token ? `Bearer ${token}` : "",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
+      ...options,
+      headers,
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
-  },
+  };
 
-  async delete(endpoint: string) {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: token ? `Bearer ${token}` : "",
-        "Content-Type": "application/json",
-      },
-    });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return response.json();
-  },
+  return {
+    get: (endpoint: string) => request(endpoint),
+    post: (endpoint: string, data: any) =>
+      request(endpoint, { method: "POST", body: JSON.stringify(data) }),
+    put: (endpoint: string, data: any) =>
+      request(endpoint, { method: "PUT", body: JSON.stringify(data) }),
+    delete: (endpoint: string) => request(endpoint, { method: "DELETE" }),
+  };
 };

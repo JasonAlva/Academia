@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/layout";
 import {
   Card,
   CardContent,
@@ -27,11 +26,18 @@ import {
 } from "@/components/ui/select";
 import { IconPlus, IconSearch, IconEye, IconEdit } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
-import { studentService, type Student } from "@/services/studentService";
+import { useStudentService, type Student } from "@/services/studentService";
 import { toast } from "sonner";
+import {
+  useDepartmentService,
+  type Department,
+} from "@/services/departmentService";
 
 export default function StudentsPage() {
+  const { getAll: getStudents, delete: deleteStudent } = useStudentService();
+  const { getAll: getDepartment } = useDepartmentService();
   const [students, setStudents] = useState<Student[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
@@ -39,13 +45,26 @@ export default function StudentsPage() {
 
   useEffect(() => {
     fetchStudents();
+    fetchDepartment();
   }, []);
 
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const data = await studentService.getAll();
+      const data = await getStudents();
       setStudents(data);
+    } catch (error) {
+      toast.error("Failed to fetch students", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  const fetchDepartment = async () => {
+    try {
+      const data = await getDepartment();
+      setDepartments(data);
     } catch (error) {
       toast.error("Failed to fetch students", {
         description: error instanceof Error ? error.message : "Unknown error",
@@ -108,13 +127,11 @@ export default function StudentsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Departments</SelectItem>
-            <SelectItem value="Computer Science">Computer Science</SelectItem>
-            <SelectItem value="Electrical Engineering">
-              Electrical Engineering
-            </SelectItem>
-            <SelectItem value="Mechanical Engineering">
-              Mechanical Engineering
-            </SelectItem>
+            {departments.map((dept: any) => (
+              <SelectItem key={dept.id} value={dept.code}>
+                {dept.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={semesterFilter} onValueChange={setSemesterFilter}>

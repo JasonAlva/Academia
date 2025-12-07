@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
-from src.models.schemas import StudentResponse, StudentUpdate
+from src.models.schemas import StudentResponse, StudentUpdate,StudentOut
 from src.services.student_service import StudentService
 from src.api.dependencies import get_current_user
 from src.config.database import prisma
 
 router = APIRouter()
 
-@router.get("/", response_model=list[StudentResponse])
+@router.get("/", response_model=list[StudentOut])
 async def get_students(skip: int = 0, limit: int = 10):
     student_service = StudentService(prisma)
     students = await student_service.list_students()

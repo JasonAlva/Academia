@@ -5,13 +5,13 @@ from src.config.database import prisma
 
 router = APIRouter()
 
-@router.get("/departments", response_model=list[DepartmentSchema])
+@router.get("", response_model=list[DepartmentSchema])
 async def get_departments():
     department_service = DepartmentService(prisma)
     departments = await department_service.list_departments()
     return departments
 
-@router.get("/departments/{department_id}", response_model=DepartmentSchema)
+@router.get("/{department_id}", response_model=DepartmentSchema)
 async def get_department(department_id: str):
     department_service = DepartmentService(prisma)
     department = await department_service.get_department(department_id)
@@ -19,13 +19,13 @@ async def get_department(department_id: str):
         raise HTTPException(status_code=404, detail="Department not found")
     return department
 
-@router.post("/departments", response_model=DepartmentSchema)
+@router.post("", response_model=DepartmentSchema)
 async def create_department(department: DepartmentSchema):
     department_service = DepartmentService(prisma)
     new_department = await department_service.create_department(department)
     return new_department
 
-@router.put("/departments/{department_id}", response_model=DepartmentSchema)
+@router.put("/{department_id}", response_model=DepartmentSchema)
 async def update_department(department_id: str, department: DepartmentSchema):
     department_service = DepartmentService(prisma)
     updated_department = await department_service.update_department(department_id, department)
@@ -33,7 +33,7 @@ async def update_department(department_id: str, department: DepartmentSchema):
         raise HTTPException(status_code=404, detail="Department not found")
     return updated_department
 
-@router.delete("/departments/{department_id}", response_model=dict)
+@router.delete("/{department_id}", response_model=dict)
 async def delete_department(department_id: str):
     department_service = DepartmentService(prisma)
     try:

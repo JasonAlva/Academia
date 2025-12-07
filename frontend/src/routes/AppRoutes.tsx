@@ -5,7 +5,7 @@ import ProtectedRoute from "@/auth/ProtectedRoutes";
 
 import AuthForm from "@/pages/auth/AuthForm";
 
-import ChatPage from "@/features/chat/ChatPage";
+import ChatPage from "@/features/chat/ChatPage.tsx";
 
 import UnauthorizedPage from "../pages/errors/Unauthorized.tsx";
 
@@ -15,9 +15,10 @@ import TeacherDashboard from "@/pages/teacher/TeacherDashboard";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 
 // Import Admin Feature Pages
-import DepartmentsPage from "@/features/admin/DepartmentsPage";
+import AdminDepartmentsPage from "@/features/admin/DepartmentsPage";
 import AdminStudentsPage from "@/features/admin/StudentsPage";
 import AnalyticsPage from "@/features/admin/AnalyticsPage";
+import AdminCoursePage from "@/features/admin/CoursePage";
 
 // Import Teacher Feature Pages
 import TeacherCoursesPage from "@/features/teacher/CoursesPage";
@@ -27,6 +28,8 @@ import TeacherAttendancePage from "@/features/teacher/AttendancePage";
 import StudentCoursesPage from "@/features/student/CoursesPage";
 import StudentGradesPage from "@/features/student/GradesPage";
 import DashboardRoutes from "@/layout/DashboardRoutes.tsx";
+import TimeTablesPage from "@/features/timetable/TimeTablesPage.tsx";
+import TeachersPage from "@/features/admin/TeachersPage.tsx";
 
 // ----------------------
 // Login Page
@@ -51,9 +54,9 @@ function RoleDashboard() {
 
   const role = user.role?.toLowerCase();
 
-  if (role === "student") return <Navigate to="/student/dashboard" replace />;
-  if (role === "teacher") return <Navigate to="/teacher/dashboard" replace />;
-  if (role === "admin") return <Navigate to="/admin/dashboard" replace />;
+  if (role === "student") return <Navigate to="/student/chat" replace />;
+  if (role === "teacher") return <Navigate to="/teacher/chat" replace />;
+  if (role === "admin") return <Navigate to="/admin/chat" replace />;
 
   return <Navigate to="/login" replace />;
 }
@@ -72,10 +75,10 @@ export default function AppRoutes() {
       <Route element={<DashboardRoutes />}>
         {/* STUDENT ROUTES */}
         <Route
-          path="/student/dashboard"
+          path="/student/chat"
           element={
             <ProtectedRoute allowed={["student"]}>
-              <StudentDashboard />
+              <ChatPage />
             </ProtectedRoute>
           }
         />
@@ -98,10 +101,10 @@ export default function AppRoutes() {
 
         {/* TEACHER ROUTES */}
         <Route
-          path="/teacher/dashboard"
+          path="/teacher/chat"
           element={
             <ProtectedRoute allowed={["teacher"]}>
-              <TeacherDashboard />
+              <ChatPage />
             </ProtectedRoute>
           }
         />
@@ -124,10 +127,10 @@ export default function AppRoutes() {
 
         {/* ADMIN ROUTES */}
         <Route
-          path="/admin/dashboard"
+          path="/admin/chat"
           element={
             <ProtectedRoute allowed={["admin"]}>
-              <AdminDashboard />
+              <ChatPage />
             </ProtectedRoute>
           }
         />
@@ -135,7 +138,7 @@ export default function AppRoutes() {
           path="/admin/departments"
           element={
             <ProtectedRoute allowed={["admin"]}>
-              <DepartmentsPage />
+              <AdminDepartmentsPage />
             </ProtectedRoute>
           }
         />
@@ -144,6 +147,30 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute allowed={["admin"]}>
               <AdminStudentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/teachers"
+          element={
+            <ProtectedRoute allowed={["admin"]}>
+              <TeachersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/timetable"
+          element={
+            <ProtectedRoute allowed={["admin"]}>
+              <TimeTablesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/courses"
+          element={
+            <ProtectedRoute allowed={["admin"]}>
+              <AdminCoursePage />
             </ProtectedRoute>
           }
         />

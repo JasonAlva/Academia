@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Dict, Any
 import jwt
 from fastapi import HTTPException, status
 
@@ -17,18 +17,17 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def verify_token(token: str):
+def verify_token(token: str) -> Dict[str, Any]:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email = payload.get("sub")
-
-        if email is None:
+        
+        if payload.get("sub") is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token: email missing",
+                detail="Invalid token: subject missing",
             )
 
-        return email
+        return payload  # Return the full payload instead of just email
 
     except jwt.ExpiredSignatureError:
         raise HTTPException(

@@ -13,7 +13,7 @@ async def login(user: UserLogin):
     if not authenticated_user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
-    token = auth_service.create_access_token(user.email)
+    token = auth_service.create_access_token(authenticated_user.id)
     return {
         "access_token": token,
         "token_type": "bearer",

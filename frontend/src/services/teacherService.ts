@@ -1,4 +1,4 @@
-import { apiClient } from "./api";
+import { useApiClient } from "./api";
 
 export interface Teacher {
   id: string;
@@ -21,24 +21,24 @@ export interface Teacher {
   };
 }
 
-export const teacherService = {
-  async getAll(skip = 0, limit = 100): Promise<Teacher[]> {
-    return apiClient.get(`/teachers?skip=${skip}&limit=${limit}`);
-  },
+// Hook-based teacher service
+export const useTeacherService = () => {
+  const apiClient = useApiClient();
 
-  async getById(id: string): Promise<Teacher> {
-    return apiClient.get(`/teachers/${id}`);
-  },
+  return {
+    getAll: async (skip = 0, limit = 100): Promise<Teacher[]> =>
+      apiClient.get(`/teachers?skip=${skip}&limit=${limit}`),
 
-  async create(data: Partial<Teacher>): Promise<Teacher> {
-    return apiClient.post("/teachers", data);
-  },
+    getById: async (id: string): Promise<Teacher> =>
+      apiClient.get(`/teachers/${id}`),
 
-  async update(id: string, data: Partial<Teacher>): Promise<Teacher> {
-    return apiClient.put(`/teachers/${id}`, data);
-  },
+    create: async (data: Partial<Teacher>): Promise<Teacher> =>
+      apiClient.post("/teachers", data),
 
-  async delete(id: string): Promise<void> {
-    return apiClient.delete(`/teachers/${id}`);
-  },
+    update: async (id: string, data: Partial<Teacher>): Promise<Teacher> =>
+      apiClient.put(`/teachers/${id}`, data),
+
+    delete: async (id: string): Promise<void> =>
+      apiClient.delete(`/teachers/${id}`),
+  };
 };

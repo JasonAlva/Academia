@@ -62,8 +62,8 @@ export const adminConfig: RoleConfig = {
 
   navMain: [
     {
-      title: "Dashboard",
-      url: "/admin/dashboard",
+      title: "Chat",
+      url: "/admin/chat",
       icon: IconDashboard,
     },
     {
@@ -79,7 +79,7 @@ export const adminConfig: RoleConfig = {
       title: "Students",
       url: "/admin/students",
       icon: IconUsers,
-      badge: "2.3K",
+
       items: [
         { title: "All Students", url: "/admin/students" },
         { title: "Add Student", url: "/admin/students/add" },
@@ -107,14 +107,9 @@ export const adminConfig: RoleConfig = {
       ],
     },
     {
-      title: "Schedules",
-      url: "/admin/schedules",
+      title: "Timetable",
+      url: "/admin/timetable",
       icon: IconCalendar,
-      items: [
-        { title: "View Schedules", url: "/admin/schedules" },
-        { title: "Create Schedule", url: "/admin/schedules/create" },
-        { title: "Timetable", url: "/admin/schedules/timetable" },
-      ],
     },
     {
       title: "Attendance",

@@ -12,7 +12,10 @@ class TeacherService:
         return teacher
 
     async def get_teacher(self, teacher_id: str) -> Optional[Teacher]:
-        teacher = await self.db.teacher.find_unique(where={"id": teacher_id})
+        teacher = await self.db.teacher.find_unique(
+            where={"id": teacher_id},
+            include={"user": True}
+        )
         return teacher
 
     async def update_teacher(self, teacher_id: str, teacher_data: TeacherUpdate) -> Optional[Teacher]:
@@ -27,5 +30,5 @@ class TeacherService:
         return teacher
 
     async def list_teachers(self) -> List[Teacher]:
-        teachers = await self.db.teacher.find_many()
+        teachers = await self.db.teacher.find_many(include={"user": True})
         return teachers

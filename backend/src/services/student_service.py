@@ -8,7 +8,10 @@ class StudentService:
         self.db = db
 
     async def get_student(self, student_id: str) -> Optional[StudentModel]:
-        student = await self.db.student.find_unique(where={"id": student_id})
+        student = await self.db.student.find_unique(
+            where={"id": student_id},
+            include={"user": True}
+        )
         return student
 
     async def create_student(self, student_data: StudentCreate) -> StudentModel:
@@ -27,5 +30,5 @@ class StudentService:
         return student
 
     async def list_students(self) -> List[StudentModel]:
-        students = await self.db.student.find_many()
+        students = await self.db.student.find_many(include={"user": True})
         return students
