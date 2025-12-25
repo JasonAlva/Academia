@@ -86,7 +86,7 @@ class AuthService:
     def create_access_token(self, user_id: str) -> str:
         return create_access_token(
             {"sub": user_id},
-            expires_delta=timedelta(minutes=30)
+            expires_delta=timedelta(minutes=60)
         )
 
     async def get_current_user(self, token: str) -> UserOut:

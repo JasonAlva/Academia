@@ -19,6 +19,7 @@ import AdminDepartmentsPage from "@/features/admin/DepartmentsPage";
 import AdminStudentsPage from "@/features/admin/StudentsPage";
 import AnalyticsPage from "@/features/admin/AnalyticsPage";
 import AdminCoursePage from "@/features/admin/CoursePage";
+import AdminAttendancePage from "@/features/admin/AttendancePage";
 
 // Import Teacher Feature Pages
 import TeacherCoursesPage from "@/features/teacher/CoursesPage";
@@ -179,6 +180,14 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute allowed={["admin"]}>
               <AnalyticsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/attendance"
+          element={
+            <ProtectedRoute allowed={["admin"]}>
+              <AdminAttendancePage />
             </ProtectedRoute>
           }
         />

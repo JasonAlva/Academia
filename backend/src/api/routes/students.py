@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from src.models.schemas import StudentResponse, StudentUpdate,StudentOut
+from src.models.schemas import StudentResponse, StudentUpdate, StudentOut, StudentCreate
 from src.services.student_service import StudentService
 from src.api.dependencies import get_current_user
 from src.config.database import prisma
@@ -12,7 +12,7 @@ async def get_students(skip: int = 0, limit: int = 10):
     students = await student_service.list_students()
     return students[skip:skip+limit]
 
-@router.get("/{student_id}", response_model=StudentResponse)
+@router.get("/{student_id}", response_model=StudentOut)
 async def get_student(student_id: str):
     student_service = StudentService(prisma)
     student = await student_service.get_student(student_id)
@@ -20,13 +20,13 @@ async def get_student(student_id: str):
         raise HTTPException(status_code=404, detail="Student not found")
     return student
 
-@router.post("/", response_model=StudentResponse)
-async def create_student(student: StudentResponse):
+@router.post("/", response_model=StudentOut)
+async def create_student(student: StudentCreate):
     student_service = StudentService(prisma)
     new_student = await student_service.create_student(student)
     return new_student
 
-@router.put("/{student_id}", response_model=StudentResponse)
+@router.put("/{student_id}", response_model=StudentOut)
 async def update_student(student_id: str, student: StudentUpdate):
     student_service = StudentService(prisma)
     try:

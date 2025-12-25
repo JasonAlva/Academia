@@ -76,7 +76,6 @@ export default function DepartmentsPage() {
   const [formData, setFormData] = useState<DepartmentFormData>({
     name: "",
     code: "",
-    description: "",
   });
 
   useEffect(() => {
@@ -101,7 +100,6 @@ export default function DepartmentsPage() {
     setFormData({
       name: "",
       code: "",
-      description: "",
     });
   };
 
@@ -115,7 +113,6 @@ export default function DepartmentsPage() {
       const createData: DepartmentCreate = {
         name: formData.name,
         code: formData.code,
-        description: formData.description,
       };
 
       await create(createData);
@@ -135,7 +132,6 @@ export default function DepartmentsPage() {
     setFormData({
       name: department.name,
       code: department.code,
-      description: department.description || "",
     });
     setShowEditDialog(true);
   };
@@ -147,7 +143,6 @@ export default function DepartmentsPage() {
       const updateData: DepartmentUpdate = {
         name: formData.name,
         code: formData.code,
-        description: formData.description,
       };
 
       await update(selectedDepartment.id, updateData);
@@ -242,7 +237,7 @@ export default function DepartmentsPage() {
               <TableRow>
                 <TableHead>Department</TableHead>
                 <TableHead>Code</TableHead>
-                <TableHead>Description</TableHead>
+
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -265,9 +260,7 @@ export default function DepartmentsPage() {
                     <TableCell>
                       <Badge variant="outline">{dept.code}</Badge>
                     </TableCell>
-                    <TableCell className="max-w-md truncate">
-                      {dept.description || "N/A"}
-                    </TableCell>
+
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
@@ -292,7 +285,7 @@ export default function DepartmentsPage() {
                             setShowDeleteDialog(true);
                           }}
                         >
-                          <IconTrash className="h-4 w-4" />
+                          <IconTrash className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </TableCell>
@@ -341,19 +334,6 @@ export default function DepartmentsPage() {
                     ...formData,
                     code: e.target.value.toUpperCase(),
                   })
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Department description..."
-                rows={4}
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
                 }
               />
             </div>
@@ -408,19 +388,6 @@ export default function DepartmentsPage() {
                     ...formData,
                     code: e.target.value.toUpperCase(),
                   })
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea
-                id="edit-description"
-                placeholder="Department description..."
-                rows={4}
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
                 }
               />
             </div>

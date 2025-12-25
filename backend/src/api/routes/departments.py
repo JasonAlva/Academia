@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from src.services.department_service import DepartmentService
-from src.models.schemas import DepartmentSchema
+from src.models.schemas import DepartmentSchema, DepartmentCreate, DepartmentUpdate
 from src.config.database import prisma
 
 router = APIRouter()
@@ -20,13 +20,13 @@ async def get_department(department_id: str):
     return department
 
 @router.post("", response_model=DepartmentSchema)
-async def create_department(department: DepartmentSchema):
+async def create_department(department: DepartmentCreate):
     department_service = DepartmentService(prisma)
     new_department = await department_service.create_department(department)
     return new_department
 
 @router.put("/{department_id}", response_model=DepartmentSchema)
-async def update_department(department_id: str, department: DepartmentSchema):
+async def update_department(department_id: str, department: DepartmentUpdate):
     department_service = DepartmentService(prisma)
     updated_department = await department_service.update_department(department_id, department)
     if not updated_department:

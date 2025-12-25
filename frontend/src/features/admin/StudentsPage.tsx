@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -24,7 +25,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { IconPlus, IconSearch, IconEye, IconEdit } from "@tabler/icons-react";
+import {
+  IconPlus,
+  IconSearch,
+  IconEye,
+  IconEdit,
+  IconTrash,
+} from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { useStudentService, type Student } from "@/services/studentService";
 import { toast } from "sonner";
@@ -32,9 +39,21 @@ import {
   useDepartmentService,
   type Department,
 } from "@/services/departmentService";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function StudentsPage() {
-  const { getAll: getStudents, delete: deleteStudent } = useStudentService();
+  const {
+    getAll: getStudents,
+    getById,
+    delete: deleteStudent,
+  } = useStudentService();
   const { getAll: getDepartment } = useDepartmentService();
   const [students, setStudents] = useState<Student[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -42,6 +61,12 @@ export default function StudentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [semesterFilter, setSemesterFilter] = useState("all");
+
+  // Dialog states
+  const [showViewDialog, setShowViewDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStudents();
@@ -66,11 +91,40 @@ export default function StudentsPage() {
       const data = await getDepartment();
       setDepartments(data);
     } catch (error) {
-      toast.error("Failed to fetch students", {
+      toast.error("Failed to fetch departments", {
         description: error instanceof Error ? error.message : "Unknown error",
       });
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const handleView = async (student: Student) => {
+    setSelectedStudent(student);
+    setShowViewDialog(true);
+  };
+
+  const handleEdit = (student: Student) => {
+    // Navigate to edit page or open edit dialog
+    toast.info("Edit functionality coming soon");
+  };
+
+  const confirmDelete = (studentId: string) => {
+    setStudentToDelete(studentId);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDelete = async () => {
+    if (!studentToDelete) return;
+
+    try {
+      await deleteStudent(studentToDelete);
+      toast.success("Student deleted successfully");
+      setShowDeleteDialog(false);
+      setStudentToDelete(null);
+      fetchStudents();
+    } catch (error) {
+      toast.error("Failed to delete student", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
@@ -210,11 +264,26 @@ export default function StudentsPage() {
                     <TableCell>{student.batch}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleView(student)}
+                        >
                           <IconEye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(student)}
+                        >
                           <IconEdit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => confirmDelete(student.id)}
+                        >
+                          <IconTrash className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </TableCell>
@@ -225,6 +294,105 @@ export default function StudentsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* View Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Student Details</DialogTitle>
+            <DialogDescription>
+              Detailed information about the student
+            </DialogDescription>
+          </DialogHeader>
+          {selectedStudent && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage
+                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedStudent.user?.email}`}
+                  />
+                  <AvatarFallback>
+                    {selectedStudent.user?.name
+                      ?.split(" ")
+                      .map((n: string) => n[0])
+                      .join("") || "??"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-xl font-semibold">
+                    {selectedStudent.user?.name}
+                  </h3>
+                  <p className="text-muted-foreground">
+                    {selectedStudent.user?.email}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Student ID</Label>
+                  <p className="font-medium">{selectedStudent.studentId}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Department</Label>
+                  <p className="font-medium">{selectedStudent.department}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Semester</Label>
+                  <p className="font-medium">{selectedStudent.semester}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Batch</Label>
+                  <p className="font-medium">{selectedStudent.batch}</p>
+                </div>
+                {selectedStudent.phoneNumber && (
+                  <div>
+                    <Label className="text-muted-foreground">Phone</Label>
+                    <p className="font-medium">{selectedStudent.phoneNumber}</p>
+                  </div>
+                )}
+                {selectedStudent.address && (
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground">Address</Label>
+                    <p className="font-medium">{selectedStudent.address}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowViewDialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Student</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this student? This action cannot
+              be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setStudentToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

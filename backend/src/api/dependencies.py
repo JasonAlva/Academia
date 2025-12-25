@@ -37,15 +37,20 @@ async def get_current_user(db:Prisma=Depends(get_db),credentials:HTTPAuthorizati
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User not found"
             )
-        
+        print(user)
         return user
+    
         
     except Exception as e:
+        print(f"Authentication error: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials"
+            detail=f"Could not validate credentials: {str(e)}"  # Show actual error
         )
-
+    
 async def get_current_student(
     db: Prisma = Depends(get_db),
     current_user: UserResponse = Depends(get_current_user)

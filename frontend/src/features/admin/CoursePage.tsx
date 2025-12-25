@@ -363,8 +363,7 @@ export default function CoursePage() {
                 <TableHead>Semester</TableHead>
                 <TableHead>Credits</TableHead>
                 <TableHead>Teacher</TableHead>
-                <TableHead>Max Students</TableHead>
-                <TableHead>Status</TableHead>
+
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -390,19 +389,12 @@ export default function CoursePage() {
                         {getDepartmentName(course.departmentId)}
                       </Badge>
                     </TableCell>
-                    <TableCell>Sem {course.semester}</TableCell>
+                    <TableCell>{course.semester}</TableCell>
                     <TableCell>{course.credits}</TableCell>
                     <TableCell className="text-sm">
                       {getTeacherName(course.teacherId)}
                     </TableCell>
-                    <TableCell>{course.maxStudents || "N/A"}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={course.isActive ? "default" : "secondary"}
-                      >
-                        {course.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
+
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
@@ -427,7 +419,7 @@ export default function CoursePage() {
                             setShowDeleteDialog(true);
                           }}
                         >
-                          <IconTrash className="h-4 w-4" />
+                          <IconTrash className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </TableCell>

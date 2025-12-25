@@ -182,7 +182,7 @@ export default function TeachersPage() {
                 <TableHead>Teacher ID</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Designation</TableHead>
-                <TableHead>Specialization</TableHead>
+
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -226,11 +226,7 @@ export default function TeachersPage() {
                     <TableCell>
                       <Badge variant="secondary">{teacher.designation}</Badge>
                     </TableCell>
-                    <TableCell>
-                      {teacher.specialization || (
-                        <span className="text-muted-foreground">N/A</span>
-                      )}
-                    </TableCell>
+
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button

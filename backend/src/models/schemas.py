@@ -196,7 +196,7 @@ class DepartmentSchema(BaseModel):
     name: str
     code: str
     description: Optional[str] = None
-    headOfDepartment: Optional[str] = None
+    hodName: Optional[str] = None
     createdAt: datetime
     updatedAt: datetime
 
@@ -207,13 +207,13 @@ class DepartmentCreate(BaseModel):
     name: str
     code: str
     description: Optional[str] = None
-    headOfDepartment: Optional[str] = None
+    hodName: Optional[str] = None
 
 class DepartmentUpdate(BaseModel):
     name: Optional[str] = None
     code: Optional[str] = None
     description: Optional[str] = None
-    headOfDepartment: Optional[str] = None
+    hodName: Optional[str] = None
 
 class DepartmentResponse(DepartmentBase):
     id: str
@@ -330,12 +330,56 @@ class ScheduleResponse(ScheduleBase):
         from_attributes = True
         populate_by_name = True
 
-# Attendance Schemas
-class AttendanceBase(BaseModel):
-    student_id: str = Field(alias="studentId")
-    course_id: str = Field(alias="courseId")
-    marked_by_id: str = Field(alias="markedById")
+# ClassSession Schemas
+class ClassSessionBase(BaseModel):
+    courseId: str
+    scheduleId: Optional[str] = None
+    teacherId: str
     date: datetime
+    startTime: str
+    endTime: str
+    room: Optional[str] = None
+    topic: Optional[str] = None
+    status: str = "SCHEDULED"
+    notes: Optional[str] = None
+
+class ClassSessionCreate(ClassSessionBase):
+    pass
+
+class ClassSessionUpdate(BaseModel):
+    scheduleId: Optional[str] = None
+    teacherId: Optional[str] = None
+    date: Optional[datetime] = None
+    startTime: Optional[str] = None
+    endTime: Optional[str] = None
+    room: Optional[str] = None
+    topic: Optional[str] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
+
+class ClassSessionOut(BaseModel):
+    id: str
+    courseId: str
+    scheduleId: Optional[str] = None
+    teacherId: str
+    date: datetime
+    startTime: str
+    endTime: str
+    room: Optional[str] = None
+    topic: Optional[str] = None
+    status: str
+    notes: Optional[str] = None
+    createdAt: datetime
+    updatedAt: datetime
+
+    class Config:
+        from_attributes = True
+
+# Student Attendance Schemas
+class StudentAttendanceBase(BaseModel):
+    sessionId: str
+    studentId: str
+    courseId: str
     status: str
     remarks: Optional[str] = None
 
@@ -392,32 +436,82 @@ class CourseOut(BaseModel):
     class Config:
         from_attributes = True
 
-class AttendanceRead(BaseModel):
+class StudentAttendanceRead(BaseModel):
     id: str
+    sessionId: str
     studentId: str
     courseId: str
-    markedById: str
-    date: datetime
     status: str
+    markedById: str
+    remarks: Optional[str] = None
+    markedAt: datetime
+    updatedAt: datetime
     student: Optional[StudentOut] = None
     course: Optional[CourseOut] = None
     markedBy: Optional[TeacherOut] = None
+    session: Optional[ClassSessionOut] = None
 
     class Config:
         from_attributes = True
-class AttendanceCreate(BaseModel):
+class StudentAttendanceCreate(BaseModel):
+    sessionId: str
     studentId: str
-    courseId: str
-    date: datetime
     status: str
+    remarks: Optional[str] = None
 
-class AttendanceUpdate(BaseModel):
+class StudentAttendanceUpdate(BaseModel):
     status: Optional[str] = None
-    date: Optional[datetime] = None
+    remarks: Optional[str] = None
 
-class AttendanceResponse(AttendanceBase):
+class StudentAttendanceResponse(StudentAttendanceBase):
     id: str
-    createdAt: datetime
+    markedById: str
+    markedAt: datetime
+    updatedAt: datetime
+    
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+# Teacher Attendance Schemas
+class TeacherAttendanceBase(BaseModel):
+    sessionId: str
+    teacherId: str
+    courseId: str
+    status: str
+    remarks: Optional[str] = None
+
+class TeacherAttendanceCreate(BaseModel):
+    sessionId: str
+    teacherId: str
+    status: str
+    remarks: Optional[str] = None
+
+class TeacherAttendanceUpdate(BaseModel):
+    status: Optional[str] = None
+    remarks: Optional[str] = None
+
+class TeacherAttendanceRead(BaseModel):
+    id: str
+    sessionId: str
+    teacherId: str
+    courseId: str
+    status: str
+    markedById: str
+    remarks: Optional[str] = None
+    markedAt: datetime
+    updatedAt: datetime
+    teacher: Optional[TeacherOut] = None
+    course: Optional[CourseOut] = None
+    session: Optional[ClassSessionOut] = None
+
+    class Config:
+        from_attributes = True
+
+class TeacherAttendanceResponse(TeacherAttendanceBase):
+    id: str
+    markedById: str
+    markedAt: datetime
     updatedAt: datetime
     
     class Config:
