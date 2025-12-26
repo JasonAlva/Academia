@@ -1,8 +1,11 @@
 import { useApiClient } from "./api";
 
 export interface Student {
-  id: string;
-  userId: string;
+  
+
+  name: string;
+  email: string;
+  password: string;
   studentId: string;
   department: string;
   semester: number;
@@ -10,8 +13,8 @@ export interface Student {
   phoneNumber?: string;
   address?: string;
   dateOfBirth?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
   user?: {
     id: string;
     name: string;

@@ -51,7 +51,7 @@ import {
 export default function StudentsPage() {
   const {
     getAll: getStudents,
-    getById,
+    create,
     delete: deleteStudent,
   } = useStudentService();
   const { getAll: getDepartment } = useDepartmentService();
@@ -63,16 +63,67 @@ export default function StudentsPage() {
   const [semesterFilter, setSemesterFilter] = useState("all");
 
   // Dialog states
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState<Student>({
+    studentId: "",
+    semester: 0,
+    name: "",
+    batch: "",
+    department: "",
+    email: "",
+    password: "",
+  });
 
   useEffect(() => {
     fetchStudents();
     fetchDepartment();
   }, []);
 
+  const resetForm = () => {
+    setFormData({
+      studentId: "",
+      semester: 0,
+      name: "",
+      batch: "",
+      department: "",
+      email: "",
+      password: "",
+    });
+  };
+
+  const handleCreate = async () => {
+    try {
+      if (!formData.name || !formData.department) {
+        toast.error("Please fill in all required fields");
+        return;
+      }
+
+      const createData: Student = {
+        studentId: formData.studentId,
+        semester: formData.semester,
+        name: formData.name,
+        batch: formData.batch,
+        department: formData.department,
+        email: formData.email,
+        password: formData.password,
+      };
+
+      await create(createData);
+      toast.success("Student added successfully");
+      setShowCreateDialog(false);
+      resetForm();
+      fetchStudents();
+    } catch (error) {
+      toast.error("Failed to add student", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
   const fetchStudents = async () => {
     try {
       setLoading(true);
@@ -159,7 +210,7 @@ export default function StudentsPage() {
             Manage student information and enrollments
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setShowCreateDialog(true)}>
           <IconPlus className="mr-2 h-4 w-4" />
           Add Student
         </Button>
@@ -294,6 +345,141 @@ export default function StudentsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Create Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Department</DialogTitle>
+            <DialogDescription>
+              Add a new department to the institution
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {/* Department Name */}
+            <div className="space-y-2">
+              <Label htmlFor="name">
+                Student Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="name"
+                placeholder="e.g., Computer Science"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">
+                Student Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="name"
+                placeholder="e.g., 1RV23IS056"
+                value={formData.studentId}
+                onChange={(e) =>
+                  setFormData({ ...formData, studentId: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Department Code */}
+            <div className="space-y-2">
+              <Label htmlFor="department">
+                Department Code <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="department"
+                placeholder="e.g., CS"
+                value={formData.department}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    department: e.target.value.toUpperCase(),
+                  })
+                }
+              />
+            </div>
+
+            {/* Batch */}
+            <div className="space-y-2">
+              <Label htmlFor="batch">
+                Batch <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="batch"
+                placeholder="e.g., 2025"
+                value={formData.batch}
+                onChange={(e) =>
+                  setFormData({ ...formData, batch: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Semester */}
+            <div className="space-y-2">
+              <Label htmlFor="semester">
+                Semester <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="semester"
+                type="number"
+                placeholder="e.g., 5"
+                value={formData.semester}
+                onChange={(e) =>
+                  setFormData({ ...formData, semester: Number(e.target.value) })
+                }
+              />
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email">
+                Email <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="e.g., example@domain.com"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <Label htmlFor="password">
+                Password <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter password"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateDialog(false);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCreate}>Create Department</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* View Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>

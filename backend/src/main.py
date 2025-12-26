@@ -13,7 +13,8 @@ from src.api.routes import (
     schedules,
     students,
     teachers,
-    users
+    users,
+    agent_query
 )
 from src.middleware.error_handler import error_handler
 
@@ -58,6 +59,7 @@ app.include_router(enrollments.router, prefix="/api/enrollments", tags=["Enrollm
 app.include_router(schedules.router, prefix="/api/schedules", tags=["Schedules"])
 app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
+app.include_router(agent_query.router, prefix="/api/agent", tags=["agent"])
 
 # Root endpoint
 @app.get("/")

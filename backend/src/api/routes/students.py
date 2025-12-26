@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends
-from src.models.schemas import StudentResponse, StudentUpdate, StudentOut, StudentCreate
+from src.models.schemas import StudentCreate,StudentResponse, StudentUpdate, StudentOut, StudentUserCreate,UserCreate
 from src.services.student_service import StudentService
 from src.api.dependencies import get_current_user
 from src.config.database import prisma
+from src.services.user_service import UserService
 
 router = APIRouter()
 
@@ -21,9 +22,17 @@ async def get_student(student_id: str):
     return student
 
 @router.post("/", response_model=StudentOut)
-async def create_student(student: StudentCreate):
+async def create_student(student: StudentUserCreate):
+    user_service=UserService(prisma)
+    user=UserCreate(email=student.email,password=student.password,name=student.name,role="STUDENT")
+    new_user = await user_service.create_user(user)
+    student_with_user = StudentCreate(studentId=student.studentId,
+    department=student.department,
+    semester=student.semester,
+    batch= student.batch,
+    userId=new_user.id)
     student_service = StudentService(prisma)
-    new_student = await student_service.create_student(student)
+    new_student = await student_service.create_student(student_with_user)
     return new_student
 
 @router.put("/{student_id}", response_model=StudentOut)

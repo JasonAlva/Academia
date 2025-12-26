@@ -15,6 +15,7 @@ class StudentService:
         return student
 
     async def create_student(self, student_data: StudentCreate) -> StudentModel:
+    
         student = await self.db.student.create(data=student_data.dict())
         return student
 

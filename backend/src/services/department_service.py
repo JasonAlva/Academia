@@ -24,6 +24,10 @@ class DepartmentService:
     async def delete_department(self, department_id: str) -> Optional[Department]:
         department = await self.db.department.delete(where={"id": department_id})
         return department
+    
+    async def delete_department_by_code(self, department_code: str) -> Optional[Department]:
+        department = await self.db.department.delete(where={"code": department_code})
+        return department
 
     async def list_departments(self) -> List[Department]:
         departments = await self.db.department.find_many()

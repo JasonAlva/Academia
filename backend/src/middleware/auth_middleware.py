@@ -16,7 +16,7 @@ async def auth_middleware(request:Request):
     
     token=token_header.split(" ")[1]
 
-    email=verify_token(token)
+    user_id=verify_token(token)
 
     user=await AuthService.get_current_user(token)
 

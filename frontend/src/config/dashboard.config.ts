@@ -8,7 +8,7 @@ import {
   IconSettings,
   IconHelp,
   IconUserCircle,
-  IconChartBar,
+  
   IconSchool,
   IconClipboardCheck,
   IconFileText,
@@ -84,11 +84,6 @@ const adminConfig: Omit<DashboardConfig, "user"> = {
       title: "Timetable",
       url: "/admin/timetable",
       icon: IconCalendar,
-    },
-    {
-      title: "Analytics",
-      url: "/admin/analytics",
-      icon: IconChartBar,
     },
   ],
   navSecondary: [

@@ -10,24 +10,10 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    
-    # Optional fields for Student
-    studentId: Optional[str] = None
-    department: Optional[str] = None
-    semester: Optional[int] = None
-    batch: Optional[str] = None
-    phoneNumber: Optional[str] = None
-    address: Optional[str] = None
-    dateOfBirth: Optional[datetime] = None
-    
-    # Optional fields for Teacher
-    teacherId: Optional[str] = None
-    designation: Optional[str] = None
-    specialization: Optional[str] = None
-    officeRoom: Optional[str] = None
-    officeHours: Optional[str] = None
-    joiningDate: Optional[datetime] = None
 
+    
+    
+    
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     name: Optional[str] = None
@@ -53,7 +39,7 @@ class UserOut(BaseModel):
         from_attributes = True
 # Student Schemas
 class StudentBase(BaseModel):
-    student_id: str = Field(alias="studentId")
+    studentId: str = Field(alias="studentId")
     department: str
     semester: int
     batch: str
@@ -61,8 +47,17 @@ class StudentBase(BaseModel):
     address: Optional[str] = None
     date_of_birth: Optional[datetime] = Field(None, alias="dateOfBirth")
 
-class StudentCreate(StudentBase):
-    user_id: str = Field(alias="userId")
+class StudentUserCreate(StudentBase):
+    email: EmailStr
+    name: str
+    password:str
+    
+class StudentCreate(BaseModel):
+    studentId: str = Field(alias="studentId")
+    department: str
+    semester: int
+    batch: str
+    userId: str = Field(alias="userId")
 
 class StudentUpdate(BaseModel):
     department: Optional[str] = None
