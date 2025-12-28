@@ -13,6 +13,10 @@ class DepartmentService:
     async def get_department(self, department_id: str) -> Optional[Department]:
         department = await self.db.department.find_unique(where={"id": department_id})
         return department
+    
+    async def get_department_by_name(self, department_name: str) -> Optional[Department]:
+        department = await self.db.department.find_unique(where={"name": department_name})
+        return department
 
     async def update_department(self, department_id: str, department_data: DepartmentUpdate) -> Optional[Department]:
         department = await self.db.department.update(

@@ -39,15 +39,17 @@ async def create_new_department(name: str,code:str):
     return {"id": dept.id, "name": dept.name, "code": dept.code, "message": "Department created successfully"}
 
 @tool
-async def update_existing_department(department_id: str, name: str, code: str ):
+async def update_existing_department( name: str, code: str ):
     """Update an existing department's information.
     
     Args:
-        department_id: The unique identifier of the department
+       
         name: New name for the department (optional)
         location: New location for the department (optional)
     """
     service = DepartmentService(prisma)
+    department=service.get_department_by_name(name)
+    department_id=department.id
     dept_data = DepartmentUpdate(name=name, code=code)
     dept = await service.update_department(department_id, dept_data)
     if not dept:

@@ -37,7 +37,7 @@ async def get_current_user(db:Prisma=Depends(get_db),credentials:HTTPAuthorizati
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User not found"
             )
-        print(user)
+        
         return user
     
         

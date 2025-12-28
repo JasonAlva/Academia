@@ -185,8 +185,8 @@ model Schedule {
   courseId      String
   course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  teacherId     String
-  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teacherId     String?
+  teacher       Teacher?  @relation(fields: [teacherId], references: [id], onDelete: SetNull)
 
   dayOfWeek     DayOfWeek
   startTime     String
@@ -223,7 +223,7 @@ model ClassSession {
   schedule    Schedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
 
   teacherId   String
-  teacher     Teacher @relation(fields: [teacherId], references: [id])
+  teacher     Teacher @relation(fields: [teacherId], references: [id],onDelete: Cascade)
 
   date        DateTime
   startTime   String
@@ -266,8 +266,8 @@ model StudentAttendance {
 
   status      AttendanceStatus
 
-  markedById  String
-  markedBy    Teacher @relation(fields: [markedById], references: [id])
+  markedById  String?
+  markedBy    Teacher? @relation(fields: [markedById], references: [id],onDelete: SetNull)
 
   remarks     String? @db.Text
 
@@ -287,8 +287,8 @@ model TeacherAttendance {
   sessionId   String @unique
   session     ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  teacherId   String
-  teacher     Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teacherId   String?
+  teacher     Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
 
   courseId    String
   course      Course @relation(fields: [courseId], references: [id])
@@ -296,7 +296,7 @@ model TeacherAttendance {
   status      AttendanceStatus
 
   markedById  String
-  markedBy    Admin @relation(fields: [markedById], references: [id])
+  markedBy    Admin @relation(fields: [markedById], references: [id],onDelete: SetNull)
 
   remarks     String? @db.Text
 

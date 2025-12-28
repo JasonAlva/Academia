@@ -14,6 +14,14 @@ class StudentService:
         )
         return student
 
+    async def get_student_by_user_id(self, user_id: str) -> Optional[StudentModel]:
+        """Get student by their user ID"""
+        student = await self.db.student.find_unique(
+            where={"userId": user_id},
+            include={"user": True}
+        )
+        return student
+
     async def create_student(self, student_data: StudentCreate) -> StudentModel:
     
         student = await self.db.student.create(

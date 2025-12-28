@@ -21,6 +21,15 @@ async def get_student(student_id: str):
         raise HTTPException(status_code=404, detail="Student not found")
     return student
 
+@router.get("/user/{user_id}", response_model=StudentOut)
+async def get_student_by_user_id(user_id: str):
+    """Get student profile by user ID"""
+    student_service = StudentService(prisma)
+    student = await student_service.get_student_by_user_id(user_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student
+
 @router.post("/", response_model=StudentOut)
 async def create_student(student: StudentUserCreate):
     user_service=UserService(prisma)

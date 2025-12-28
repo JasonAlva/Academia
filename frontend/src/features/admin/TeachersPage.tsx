@@ -55,6 +55,7 @@ import { Label } from "@/components/ui/label";
 export default function TeachersPage() {
   const {
     getAll: getTeachers,
+    create: createTeacher,
     delete: deleteTeacher,
     update: updateTeacher,
   } = useTeacherService();
@@ -70,16 +71,20 @@ export default function TeachersPage() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<Partial<Teacher>>({
     teacherId: "",
-    userId: "",
+    userId: " ",
     department: "",
     designation: "",
     specialization: "",
     phoneNumber: "",
     officeRoom: "",
+    name: "",
+    email: "",
+    password: "",
     user: {
       name: "",
       role: "",
@@ -102,6 +107,9 @@ export default function TeachersPage() {
       specialization: "",
       phoneNumber: "",
       officeRoom: "",
+      name: "",
+      email: "",
+      password: "",
       user: {
         name: "",
         email: "",
@@ -123,6 +131,45 @@ export default function TeachersPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+  const handleCreateTeacher = async () => {
+    try {
+      if (
+        !formData.name ||
+        !formData.teacherId ||
+        !formData.department ||
+        !formData.designation ||
+        !formData.email ||
+        !formData.password
+      ) {
+        toast.error("Please fill in all required fields");
+        return;
+      }
+
+      const createData: any = {
+        name: formData.name,
+        teacherId: formData.teacherId,
+        department: formData.department,
+        designation: formData.designation,
+        specialization: formData.specialization,
+        email: formData.email,
+        password: formData.password,
+        phoneNumber: formData.phoneNumber,
+        officeRoom: formData.officeRoom,
+        userId: formData.userId,
+      };
+
+      await createTeacher(createData);
+
+      toast.success("Teacher added successfully");
+      setShowCreateDialog(false);
+      resetForm();
+      fetchTeachers();
+    } catch (error) {
+      toast.error("Failed to add teacher", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
@@ -228,7 +275,11 @@ export default function TeachersPage() {
             Manage faculty information and assignments
           </p>
         </div>
-        <Button>
+        <Button
+          onClick={() => {
+            setShowCreateDialog(true);
+          }}
+        >
           <IconPlus className="mr-2 h-4 w-4" />
           Add Teacher
         </Button>
@@ -493,6 +544,169 @@ export default function TeachersPage() {
               Cancel
             </Button>
             <Button onClick={handleUpdate}>Update Teacher</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Create Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-md max-h-[calc(100vh-80px)] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Teacher</DialogTitle>
+            <DialogDescription>
+              Add a new teacher to the institution
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {/* Teacher Name */}
+            <div className="space-y-2">
+              <Label htmlFor="name">
+                Teacher Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="name"
+                placeholder="e.g., Dr. John Doe"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="teacherId">
+                Teacher ID <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="teacherId"
+                placeholder="e.g., T001"
+                value={formData.teacherId}
+                onChange={(e) =>
+                  setFormData({ ...formData, teacherId: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Department */}
+            <div className="space-y-2">
+              <Label htmlFor="department">
+                Department <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.department}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, department: value })
+                }
+              >
+                <SelectTrigger id="department">
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.code}>
+                      {dept.name} ({dept.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Designation */}
+            <div className="space-y-2">
+              <Label htmlFor="designation">
+                Designation <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="designation"
+                placeholder="e.g., Professor, Assistant Professor"
+                value={formData.designation}
+                onChange={(e) =>
+                  setFormData({ ...formData, designation: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Specialization */}
+            <div className="space-y-2">
+              <Label htmlFor="specialization">Specialization</Label>
+              <Input
+                id="specialization"
+                placeholder="e.g., Machine Learning, Database Systems"
+                value={formData.specialization || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, specialization: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Phone Number */}
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Input
+                id="phoneNumber"
+                placeholder="e.g., +1234567890"
+                value={formData.phoneNumber || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, phoneNumber: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Office Room */}
+            <div className="space-y-2">
+              <Label htmlFor="officeRoom">Office Room</Label>
+              <Input
+                id="officeRoom"
+                placeholder="e.g., IS102"
+                value={formData.officeRoom || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, officeRoom: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email">
+                Email <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="e.g., example@domain.com"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <Label htmlFor="password">
+                Password <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter password"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateDialog(false);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCreateTeacher}>Add Teacher</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

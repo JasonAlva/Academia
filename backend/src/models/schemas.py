@@ -116,7 +116,14 @@ class TeacherBase(BaseModel):
     officeHours: Optional[str] = None
     joiningDate: Optional[datetime] = None
 
+class TeacherCreateWithUser(TeacherBase):
+    name:str
+    email:str
+    password:str
+    userId: str = Field(alias="userId")
+
 class TeacherCreate(TeacherBase):
+   
     userId: str = Field(alias="userId")
 
 class TeacherUpdate(BaseModel):
@@ -275,12 +282,8 @@ class EnrollmentBase(BaseModel):
 class EnrollmentCreate(BaseModel):
     student_id: str = Field(alias="studentId")
     course_id: str = Field(alias="courseId")
-    semester: str
-    academic_year: str = Field(alias="academicYear")
 
 class EnrollmentUpdate(BaseModel):
-    semester: Optional[str] = None
-    academic_year: Optional[str] = Field(None, alias="academicYear")
     status: Optional[str] = None
     grade: Optional[str] = None
     grade_points: Optional[float] = Field(None, alias="gradePoints")
@@ -289,8 +292,6 @@ class EnrollmentResponse(BaseModel):
     id: str
     student_id: str = Field(alias="studentId")
     course_id: str = Field(alias="courseId")
-    semester: str
-    academic_year: str = Field(alias="academicYear")
     status: Optional[str] = None
     grade: Optional[str] = None
     grade_points: Optional[float] = Field(None, alias="gradePoints")

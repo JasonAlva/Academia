@@ -33,8 +33,13 @@ class TeacherService:
         if not teacher:
             return None
         
-   
+        
+        # await self.db.schedule.delete_many(where={"teacherId": teacher_id})
+
+        
+        await self.db.teacher.delete(where={"id": teacher_id})
         await self.db.user.delete(where={"id": teacher.userId})
+        
         return teacher
 
     async def list_teachers(self) -> List[Teacher]:

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 interface Message {
   role: "user" | "assistant";
-  content: string;
+  query: string;
   id?: string | number;
 }
 
@@ -21,28 +21,33 @@ export default function ChatPage() {
 
   const send = async () => {
     if (!input.trim()) return;
-    const userMsg: Message = {
+    const userMsg: any = {
+      // role: "user",
+      query: input.trim(),
+      // id: Date.now(),
+    };
+    const userMessg: Message = {
       role: "user",
-      content: input.trim(),
+      query: input.trim(),
       id: Date.now(),
     };
-    setMessages((m) => [...m, userMsg]);
+    setMessages((m) => [...m, userMessg]);
     setInput("");
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token") || "";
-      const res = await fetch("http://localhost:8000/api/query", {
+      const res = await fetch("http://localhost:8000/api/agent/query", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ query: userMsg.content }),
+        body: JSON.stringify({ query: userMsg.query }),
       });
       const data = await res.json();
       const assistant: Message = {
         role: "assistant",
-        content: data.answer || "No response",
+        query: data.answer || "No response",
         id: Date.now() + 1,
       };
       setMessages((m) => [...m, assistant]);
@@ -51,7 +56,7 @@ export default function ChatPage() {
         ...m,
         {
           role: "assistant",
-          content: "Error: failed to fetch",
+          query: "Error: failed to fetch",
           id: Date.now() + 2,
         },
       ]);
@@ -73,7 +78,7 @@ export default function ChatPage() {
         <CardHeader>
           <CardTitle>Chat</CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col p-0">
+        <CardContent className="flex-1 flex flex-col p-0 ">
           <div
             ref={messagesRef}
             className="flex-1 overflow-y-auto p-6 space-y-4 bg-white/50"
@@ -94,7 +99,7 @@ export default function ChatPage() {
                     : "mr-auto bg-gray-100 text-gray-800 rounded-bl-none"
                 }`}
               >
-                <div className="whitespace-pre-wrap">{m.content}</div>
+                <div className="whitespace-pre-wrap">{m.query}</div>
               </div>
             ))}
 

@@ -11,9 +11,7 @@ class EnrollmentService:
         enrollment= await self.db.enrollment.create(data={
             'student':{'connect':{'id':enrollment_data.student_id}},
             'course':{'connect':{'id':enrollment_data.course_id}},
-            'semester':enrollment_data.semester,
-            'academic_year':enrollment_data.academic_year,
-            'status':"active"
+            'status':"ACTIVE"
         })
 
         return EnrollmentResponse.model_validate(enrollment)
@@ -39,3 +37,23 @@ class EnrollmentService:
         where = {'student_id': student_id} if student_id else {}
         enrollments = await self.db.enrollment.find_many(where=where)
         return [EnrollmentResponse.model_validate(e) for e in enrollments]
+
+    async def get_student_enrollments_with_courses(self, student_id: str):
+        """Get all enrollments for a student with full course and teacher details"""
+        enrollments = await self.db.enrollment.find_many(
+            where={'studentId': student_id, 'status': 'ACTIVE'},
+            include={
+                'course': {
+                    'include': {
+                        'teacher': {
+                            'include': {
+                                'user': True
+                            }
+                        },
+                        'department': True
+                    }
+                }
+            },
+            order={'enrolledAt': 'desc'}
+        )
+        return enrollments

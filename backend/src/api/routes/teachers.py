@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
-from src.models.schemas import TeacherCreate, TeacherUpdate, TeacherResponse,UserResponse,TeacherOut
+from src.models.schemas import TeacherCreate, TeacherUpdate, TeacherResponse,UserResponse,TeacherOut,UserCreate,TeacherCreateWithUser
 from src.services.teacher_service import TeacherService
+from src.services.user_service import UserService
 from src.api.dependencies import get_current_user
 from src.config.database import prisma
 
@@ -17,9 +18,36 @@ async def get_all_teachers(
     return teachers
 
 @router.post("/", response_model=TeacherResponse)
-async def create_teacher(teacher: TeacherCreate, current_user: UserResponse = Depends(get_current_user)):
-    teacher_service = TeacherService(prisma)
-    return await teacher_service.create_teacher(teacher)
+async def create_teacher(teacher: TeacherCreateWithUser, current_user: UserResponse = Depends(get_current_user)):
+    try:
+      
+        user_service = UserService(prisma)
+        user_create = UserCreate(
+            email=teacher.email,
+            password=teacher.password,
+            name=teacher.name,
+            role="TEACHER"
+        )
+        new_user = await user_service.create_user(user_create)
+
+        
+        teacher_service = TeacherService(prisma)
+        teacher_create = TeacherCreate(
+            teacherId=teacher.teacherId,
+            department=teacher.department,
+            designation=teacher.designation,
+            specialization=teacher.specialization,
+            phoneNumber=teacher.phoneNumber,
+            officeRoom=teacher.officeRoom,
+            officeHours=teacher.officeHours,
+            userId=new_user.id
+        )
+        new_teacher = await teacher_service.create_teacher(teacher_create)
+
+        return new_teacher
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/{teacher_id}", response_model=TeacherResponse)
 async def get_teacher(teacher_id: str, current_user: UserResponse = Depends(get_current_user)):
@@ -45,5 +73,6 @@ async def delete_teacher(teacher_id: str, current_user: UserResponse = Depends(g
         await teacher_service.delete_teacher(teacher_id)
         return {"detail": "Teacher deleted successfully"}
     except Exception as e:
+        print("hello")
         print(e)
         raise HTTPException(status_code=404, detail="Teacher not found")

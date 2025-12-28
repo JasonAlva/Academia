@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
+from typing import List
 from src.models.schemas import EnrollmentCreate, EnrollmentUpdate, EnrollmentResponse
 from src.services.enrollment_service import EnrollmentService
 from src.api.dependencies import get_current_user
@@ -39,3 +40,13 @@ async def delete_enrollment(enrollment_id: str, current_user: str = Depends(get_
         return {"detail": "Enrollment deleted successfully"}
     except:
         raise HTTPException(status_code=404, detail="Enrollment not found")
+
+@router.get("/student/{student_id}/courses")
+async def get_student_courses(student_id: str, current_user: str = Depends(get_current_user)):
+    """Get all enrolled courses for a student with full details"""
+    enrollment_service = EnrollmentService(prisma)
+    try:
+        enrollments = await enrollment_service.get_student_enrollments_with_courses(student_id)
+        return enrollments
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

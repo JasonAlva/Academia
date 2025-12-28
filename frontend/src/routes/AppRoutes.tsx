@@ -28,6 +28,7 @@ import TeacherAttendancePage from "@/features/teacher/AttendancePage";
 // Import Student Feature Pages
 import StudentCoursesPage from "@/features/student/CoursesPage";
 import StudentGradesPage from "@/features/student/GradesPage";
+import StudentAttendancePage from "@/features/student/StudentAttendancePage";
 import DashboardRoutes from "@/layout/DashboardRoutes.tsx";
 import TimeTablesPage from "@/features/timetable/TimeTablesPage.tsx";
 import TeachersPage from "@/features/admin/TeachersPage.tsx";
@@ -96,6 +97,14 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute allowed={["student"]}>
               <StudentGradesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/attendance"
+          element={
+            <ProtectedRoute allowed={["student"]}>
+              <StudentAttendancePage />
             </ProtectedRoute>
           }
         />
