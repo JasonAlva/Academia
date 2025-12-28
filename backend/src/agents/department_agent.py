@@ -1,25 +1,17 @@
 from src.tools.department_tools import (list_all_departments,delete_existing_department,get_department_by_id,update_existing_department,create_new_department)
 from langgraph.graph import StateGraph,END
-from langchain_google_genai import ChatGoogleGenerativeAI
+
 from langchain_core.messages import SystemMessage
 from langgraph.prebuilt import ToolNode
 from src.graph.agent_state import AgentState
-import os
-from dotenv import  load_dotenv
-
-load_dotenv()
+from src.config.llm import llm
 
 
 def create_department_agent():
     tools=[list_all_departments,delete_existing_department,get_department_by_id,update_existing_department,create_new_department
 
     ]
-    llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    temperature=1.0, 
-    google_api_key=os.getenv("GOOGLE_API_KEY")
-
-    )
+    
     
     llm_with_tools=llm.bind_tools(tools)
 

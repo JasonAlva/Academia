@@ -38,32 +38,79 @@ import {
   IconEye,
   IconEdit,
   IconTrash,
-  IconBriefcase,
 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
-import { useTeacherService, type Teacher } from "@/services/teacherService";
+import {
+  useTeacherService,
+  type Teacher,
+  type TeacherUpdate,
+} from "@/services/teacherService";
 import { toast } from "sonner";
 import {
   useDepartmentService,
   type Department,
 } from "@/services/departmentService";
+import { Label } from "@/components/ui/label";
 
 export default function TeachersPage() {
-  const { getAll: getTeachers, delete: deleteTeacher } = useTeacherService();
+  const {
+    getAll: getTeachers,
+    delete: deleteTeacher,
+    update: updateTeacher,
+  } = useTeacherService();
   const { getAll: getDepartments } = useDepartmentService();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [teacherToUpdateId, setTeacherToUpdateId] = useState<string | null>(
+    null
+  );
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState<Partial<Teacher>>({
+    teacherId: "",
+    userId: "",
+    department: "",
+    designation: "",
+    specialization: "",
+    phoneNumber: "",
+    officeRoom: "",
+    user: {
+      name: "",
+      role: "",
+      email: "",
+      id: "",
+    },
+  });
 
   useEffect(() => {
     fetchTeachers();
     fetchDepartments();
   }, []);
+
+  const resetForm = () => {
+    setFormData({
+      teacherId: "",
+      userId: "",
+      department: "",
+      designation: "",
+      specialization: "",
+      phoneNumber: "",
+      officeRoom: "",
+      user: {
+        name: "",
+        email: "",
+        role: "",
+        id: "",
+      },
+    });
+    setTeacherToUpdateId(null);
+  };
 
   const fetchTeachers = async () => {
     try {
@@ -79,6 +126,25 @@ export default function TeachersPage() {
     }
   };
 
+  const handleEdit = (teacher: Teacher) => {
+    setTeacherToUpdateId(teacher.id!);
+    setFormData({
+      teacherId: teacher.id,
+      department: teacher.department,
+      designation: teacher.designation,
+      specialization: teacher.specialization || "",
+      phoneNumber: teacher.phoneNumber || "",
+      officeRoom: teacher.officeRoom || "",
+      user: {
+        name: teacher.user!.name,
+        role: teacher.user!.role,
+        email: teacher.user!.email,
+        id: teacher.user!.id,
+      },
+    });
+    setShowEditDialog(true);
+  };
+
   const fetchDepartments = async () => {
     try {
       const data = await getDepartments();
@@ -89,7 +155,34 @@ export default function TeachersPage() {
       });
     }
   };
+  const handleUpdate = async () => {
+    if (!teacherToUpdateId) {
+      return;
+    }
+    if (!formData.teacherId || !formData.department || !formData.designation) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    const updateDataTeacher: TeacherUpdate = {
+      department: formData.department,
+      designation: formData.designation,
+      specialization: formData.specialization,
+      phoneNumber: formData.phoneNumber,
+      officeRoom: formData.officeRoom,
+      officeHours: formData.officeHours,
 
+      user: {
+        name: formData.user!.name,
+        email: formData.user!.email,
+      },
+    };
+
+    await updateTeacher(teacherToUpdateId, updateDataTeacher);
+    toast.success("Teacher updated successfully");
+    setShowEditDialog(false);
+    resetForm();
+    fetchTeachers();
+  };
   const handleDeleteTeacher = async () => {
     if (!teacherToDelete) return;
 
@@ -236,7 +329,11 @@ export default function TeachersPage() {
                         >
                           <IconEye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(teacher)}
+                        >
                           <IconEdit className="h-4 w-4" />
                         </Button>
                         <Button
@@ -258,6 +355,147 @@ export default function TeachersPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/*Teacher edit dialogue*/}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-md max-h-[calc(100vh-80px)] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Teacher</DialogTitle>
+            <DialogDescription>Update Teacher information</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-teacherId">Teacher ID</Label>
+              <Input
+                id="edit-teacherId"
+                value={formData.teacherId}
+                className="bg-muted"
+                disabled
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                value={formData.user!.email}
+                className="bg-muted"
+                disabled
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Teacher Name</Label>
+              <Input
+                id="edit-name"
+                value={formData.user!.name}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-department">
+                Department <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.department}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, department: value })
+                }
+              >
+                <SelectTrigger id="edit-department">
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.code}>
+                      {dept.name} ({dept.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Batch */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-designation">
+                Designation <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="edit-designation"
+                placeholder="e.g., 2021-2025"
+                value={formData.designation}
+                onChange={(e) =>
+                  setFormData({ ...formData, designation: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Phone Number */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">Phone Number</Label>
+              <Input
+                id="edit-phone"
+                placeholder="e.g., +1234567890"
+                value={formData.phoneNumber || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, phoneNumber: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Address */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-specialization">Specialization</Label>
+              <Input
+                id="edit-specialization"
+                placeholder="e.g., 123 Main St"
+                value={formData.specialization || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, specialization: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Date of Birth */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-dob">Office Room</Label>
+              <Input
+                id="edit-office-room"
+                placeholder="eg : IS102"
+                value={formData.officeRoom || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, officeRoom: e.target.value })
+                }
+              />
+            </div>
+            {/* Date of Birth */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-dob">Office Hours</Label>
+              <Input
+                id="edit-office-hours"
+                value={formData.officeHours || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, officeHours: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditDialog(false);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleUpdate}>Update Teacher</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Teacher Details Dialog */}
       <Dialog

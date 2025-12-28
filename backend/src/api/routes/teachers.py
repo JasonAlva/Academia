@@ -44,5 +44,6 @@ async def delete_teacher(teacher_id: str, current_user: UserResponse = Depends(g
     try:
         await teacher_service.delete_teacher(teacher_id)
         return {"detail": "Teacher deleted successfully"}
-    except:
+    except Exception as e:
+        print(e)
         raise HTTPException(status_code=404, detail="Teacher not found")

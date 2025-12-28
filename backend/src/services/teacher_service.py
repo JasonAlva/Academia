@@ -26,7 +26,15 @@ class TeacherService:
         return teacher
 
     async def delete_teacher(self, teacher_id: str) -> Optional[Teacher]:
-        teacher = await self.db.teacher.delete(where={"id": teacher_id})
+        teacher = await self.db.teacher.find_unique(
+            where={"id": teacher_id},
+            include={"user": True}
+        )
+        if not teacher:
+            return None
+        
+   
+        await self.db.user.delete(where={"id": teacher.userId})
         return teacher
 
     async def list_teachers(self) -> List[Teacher]:

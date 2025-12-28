@@ -43,7 +43,7 @@ class StudentBase(BaseModel):
     department: str
     semester: int
     batch: str
-    phone_number: Optional[str] = Field(None, alias="phoneNumber")
+    phoneNumber: Optional[str]=None
     address: Optional[str] = None
     date_of_birth: Optional[datetime] = Field(None, alias="dateOfBirth")
 
@@ -51,6 +51,9 @@ class StudentUserCreate(StudentBase):
     email: EmailStr
     name: str
     password:str
+
+    class Config:
+        populate_by_name = True
     
 class StudentCreate(BaseModel):
     studentId: str = Field(alias="studentId")
@@ -59,17 +62,24 @@ class StudentCreate(BaseModel):
     batch: str
     userId: str = Field(alias="userId")
 
+    class Config:
+        populate_by_name = True
+
 class StudentUpdate(BaseModel):
+    name: Optional[str] = None
     department: Optional[str] = None
     semester: Optional[int] = None
     batch: Optional[str] = None
-    phone_number: Optional[str] = Field(None, alias="phoneNumber")
+    phoneNumber: Optional[str] =None
     address: Optional[str] = None
-    date_of_birth: Optional[datetime] = Field(None, alias="dateOfBirth")
+    dateOfBirth: Optional[datetime] = Field(None, alias="dateOfBirth")
+
+    class Config:
+        populate_by_name = True
 
 class StudentResponse(StudentBase):
     id: str
-    user_id: str = Field(alias="userId")
+    userId: str = Field(alias="userId")
     createdAt: datetime
     updatedAt: datetime
     
@@ -97,30 +107,30 @@ class StudentOut(BaseModel):
 
 # Teacher Schemas
 class TeacherBase(BaseModel):
-    teacher_id: str = Field(alias="teacherId")
+    teacherId: str 
     department: str
     designation: str
     specialization: Optional[str] = None
-    phone_number: Optional[str] = Field(None, alias="phoneNumber")
-    office_room: Optional[str] = Field(None, alias="officeRoom")
-    office_hours: Optional[str] = Field(None, alias="officeHours")
-    joining_date: Optional[datetime] = Field(None, alias="joiningDate")
+    phoneNumber: Optional[str] =None
+    officeRoom: Optional[str] =None
+    officeHours: Optional[str] = None
+    joiningDate: Optional[datetime] = None
 
 class TeacherCreate(TeacherBase):
-    user_id: str = Field(alias="userId")
+    userId: str = Field(alias="userId")
 
 class TeacherUpdate(BaseModel):
     department: Optional[str] = None
     designation: Optional[str] = None
     specialization: Optional[str] = None
-    phone_number: Optional[str] = Field(None, alias="phoneNumber")
-    office_room: Optional[str] = Field(None, alias="officeRoom")
-    office_hours: Optional[str] = Field(None, alias="officeHours")
-    joining_date: Optional[datetime] = Field(None, alias="joiningDate")
+    phoneNumber: Optional[str] 
+    officeRoom: Optional[str] =None
+    officeHours: Optional[str] = None
+    joiningDate: Optional[datetime] = None
 
 class TeacherResponse(TeacherBase):
     id: str
-    user_id: str = Field(alias="userId")
+    userId: str = Field(alias="userId")
     createdAt: datetime
     updatedAt: datetime
     
@@ -153,14 +163,14 @@ class AdminBase(BaseModel):
     admin_id: str = Field(alias="adminId")
 
 class AdminCreate(AdminBase):
-    user_id: str = Field(alias="userId")
+    userId: str = Field(alias="userId")
 
 class AdminUpdate(BaseModel):
     admin_id: Optional[str] = Field(None, alias="adminId")
 
 class AdminResponse(AdminBase):
     id: str
-    user_id: str = Field(alias="userId")
+    userId: str = Field(alias="userId")
     createdAt: datetime
     updatedAt: datetime
     
@@ -293,7 +303,7 @@ class EnrollmentResponse(BaseModel):
 # Schedule Schemas
 class ScheduleBase(BaseModel):
     course_id: str = Field(alias="courseId")
-    teacher_id: str = Field(alias="teacherId")
+    teacherId: str = Field(alias="teacherId")
     day_of_week: str = Field(alias="dayOfWeek")
     start_time: str = Field(alias="startTime")
     end_time: str = Field(alias="endTime")
@@ -307,7 +317,7 @@ class ScheduleCreate(ScheduleBase):
 
 class ScheduleUpdate(BaseModel):
     course_id: Optional[str] = Field(None, alias="courseId")
-    teacher_id: Optional[str] = Field(None, alias="teacherId")
+    teacherId: Optional[str] = Field(None, alias="teacherId")
     day_of_week: Optional[str] = Field(None, alias="dayOfWeek")
     start_time: Optional[str] = Field(None, alias="startTime")
     end_time: Optional[str] = Field(None, alias="endTime")
@@ -515,7 +525,7 @@ class TeacherAttendanceResponse(TeacherAttendanceBase):
 
 # Chat Message Schemas
 class ChatMessageBase(BaseModel):
-    user_id: str = Field(alias="userId")
+    userId: str = Field(alias="userId")
     role: str
     content: str
     metadata: Optional[dict] = None
@@ -545,7 +555,7 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 class TokenData(BaseModel):
-    user_id: Optional[str] = None
+    userId: Optional[str] = None
     email: Optional[str] = None
     role: Optional[str] = None
 

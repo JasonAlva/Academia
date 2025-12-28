@@ -21,6 +21,20 @@ export interface Teacher {
   };
 }
 
+export interface TeacherUpdate {
+  department: string;
+  designation: string;
+  specialization?: string;
+  phoneNumber?: string;
+  officeRoom?: string;
+  officeHours?: string;
+  joiningDate?: string;
+  user?: {
+    name: string;
+    email: string;
+  };
+}
+
 // Hook-based teacher service
 export const useTeacherService = () => {
   const apiClient = useApiClient();
@@ -35,7 +49,7 @@ export const useTeacherService = () => {
     create: async (data: Partial<Teacher>): Promise<Teacher> =>
       apiClient.post("/teachers", data),
 
-    update: async (id: string, data: Partial<Teacher>): Promise<Teacher> =>
+    update: async (id: string, data: TeacherUpdate): Promise<Teacher> =>
       apiClient.put(`/teachers/${id}`, data),
 
     delete: async (id: string): Promise<void> =>

@@ -38,11 +38,10 @@ async def create_student(student: StudentUserCreate):
 @router.put("/{student_id}", response_model=StudentOut)
 async def update_student(student_id: str, student: StudentUpdate):
     student_service = StudentService(prisma)
-    try:
-        updated_student = await student_service.update_student(student_id, student)
-        return updated_student
-    except:
+    updated_student = await student_service.update_student(student_id, student)
+    if not updated_student:
         raise HTTPException(status_code=404, detail="Student not found")
+    return updated_student
 
 @router.delete("/{student_id}", response_model=dict)
 async def delete_student(student_id: str):

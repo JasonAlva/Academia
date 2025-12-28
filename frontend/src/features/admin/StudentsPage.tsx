@@ -33,7 +33,11 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
-import { useStudentService, type Student } from "@/services/studentService";
+import {
+  useStudentService,
+  type Student,
+  type StudentUpdate,
+} from "@/services/studentService";
 import { toast } from "sonner";
 import {
   useDepartmentService,
@@ -52,6 +56,7 @@ export default function StudentsPage() {
   const {
     getAll: getStudents,
     create,
+    update,
     delete: deleteStudent,
   } = useStudentService();
   const { getAll: getDepartment } = useDepartmentService();
@@ -64,14 +69,16 @@ export default function StudentsPage() {
 
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
+  const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState<Student>({
+  const [formData, setFormData] = useState<Partial<Student>>({
     studentId: "",
-    semester: 0,
+    semester: 1,
     name: "",
     batch: "",
     department: "",
@@ -87,23 +94,32 @@ export default function StudentsPage() {
   const resetForm = () => {
     setFormData({
       studentId: "",
-      semester: 0,
+      semester: 1,
       name: "",
       batch: "",
       department: "",
       email: "",
       password: "",
     });
+    setEditingStudentId(null);
   };
 
   const handleCreate = async () => {
     try {
-      if (!formData.name || !formData.department) {
+      if (
+        !formData.name ||
+        !formData.department ||
+        !formData.email ||
+        !formData.password ||
+        !formData.studentId ||
+        !formData.batch ||
+        !formData.semester
+      ) {
         toast.error("Please fill in all required fields");
         return;
       }
 
-      const createData: Student = {
+      const createData: Partial<Student> = {
         studentId: formData.studentId,
         semester: formData.semester,
         name: formData.name,
@@ -124,6 +140,37 @@ export default function StudentsPage() {
       });
     }
   };
+
+  const handleUpdate = async () => {
+    try {
+      if (!editingStudentId) return;
+
+      if (!formData.department || !formData.semester || !formData.batch) {
+        toast.error("Please fill in all required fields");
+        return;
+      }
+
+      const updateData: StudentUpdate = {
+        department: formData.department,
+        semester: formData.semester,
+        batch: formData.batch,
+        phoneNumber: formData.phoneNumber,
+        address: formData.address,
+        dateOfBirth: formData.dateOfBirth,
+      };
+
+      await update(editingStudentId, updateData);
+      toast.success("Student updated successfully");
+      setShowEditDialog(false);
+      resetForm();
+      fetchStudents();
+    } catch (error) {
+      toast.error("Failed to update student", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
+
   const fetchStudents = async () => {
     try {
       setLoading(true);
@@ -154,8 +201,19 @@ export default function StudentsPage() {
   };
 
   const handleEdit = (student: Student) => {
-    // Navigate to edit page or open edit dialog
-    toast.info("Edit functionality coming soon");
+    setEditingStudentId(student.id!);
+    setFormData({
+      studentId: student.studentId,
+      semester: student.semester,
+      name: student.user?.name || "",
+      batch: student.batch,
+      department: student.department,
+      email: student.user?.email || "",
+      phoneNumber: student.phoneNumber,
+      address: student.address,
+      dateOfBirth: student.dateOfBirth,
+    });
+    setShowEditDialog(true);
   };
 
   const confirmDelete = (studentId: string) => {
@@ -350,20 +408,20 @@ export default function StudentsPage() {
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Create New Department</DialogTitle>
+            <DialogTitle>Add New Student</DialogTitle>
             <DialogDescription>
-              Add a new department to the institution
+              Add a new student to the institution
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            {/* Department Name */}
+            {/* Student Name */}
             <div className="space-y-2">
               <Label htmlFor="name">
                 Student Name <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="name"
-                placeholder="e.g., Computer Science"
+                placeholder="e.g., John Doe"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
@@ -371,11 +429,11 @@ export default function StudentsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name">
-                Student Name <span className="text-red-500">*</span>
+              <Label htmlFor="studentId">
+                Student ID <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="name"
+                id="studentId"
                 placeholder="e.g., 1RV23IS056"
                 value={formData.studentId}
                 onChange={(e) =>
@@ -384,22 +442,28 @@ export default function StudentsPage() {
               />
             </div>
 
-            {/* Department Code */}
+            {/* Department */}
             <div className="space-y-2">
               <Label htmlFor="department">
-                Department Code <span className="text-red-500">*</span>
+                Department <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="department"
-                placeholder="e.g., CS"
+              <Select
                 value={formData.department}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    department: e.target.value.toUpperCase(),
-                  })
+                onValueChange={(value) =>
+                  setFormData({ ...formData, department: value })
                 }
-              />
+              >
+                <SelectTrigger id="department">
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.code}>
+                      {dept.name} ({dept.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Batch */}
@@ -476,7 +540,163 @@ export default function StudentsPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleCreate}>Create Department</Button>
+            <Button onClick={handleCreate}>Add Student</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-md max-h-[calc(100vh-80px)] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Student</DialogTitle>
+            <DialogDescription>Update student information</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {/* Student ID - Read Only */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-studentId">Student ID</Label>
+              <Input
+                id="edit-studentId"
+                value={formData.studentId}
+                className="bg-muted"
+                disabled
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                value={formData.email}
+                className="bg-muted"
+                disabled
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Student Name</Label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                }}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-department">
+                Department <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.department}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, department: value })
+                }
+              >
+                <SelectTrigger id="edit-department">
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.code}>
+                      {dept.name} ({dept.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Semester */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-semester">
+                Semester <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.semester?.toString()}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, semester: Number(value) })
+                }
+              >
+                <SelectTrigger id="edit-semester">
+                  <SelectValue placeholder="Select semester" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                    <SelectItem key={sem} value={sem.toString()}>
+                      Semester {sem}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Batch */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-batch">
+                Batch <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="edit-batch"
+                placeholder="e.g., 2021-2025"
+                value={formData.batch}
+                onChange={(e) =>
+                  setFormData({ ...formData, batch: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Phone Number */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">Phone Number</Label>
+              <Input
+                id="edit-phone"
+                placeholder="e.g., +1234567890"
+                value={formData.phoneNumber || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, phoneNumber: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Address */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-address">Address</Label>
+              <Input
+                id="edit-address"
+                placeholder="e.g., 123 Main St"
+                value={formData.address || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Date of Birth */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-dob">Date of Birth</Label>
+              <Input
+                id="edit-dob"
+                type="date"
+                value={formData.dateOfBirth || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, dateOfBirth: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditDialog(false);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleUpdate}>Update Student</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
