@@ -51,6 +51,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+
+interface FormErrors {
+  name?: string;
+  email?: string;
+  password?: string;
+  studentId?: string;
+  department?: string;
+  batch?: string;
+  semester?: string;
+  phoneNumber?: string;
+  address?: string;
+  dateOfBirth?: string;
+}
 
 export default function StudentsPage() {
   const {
@@ -66,6 +81,7 @@ export default function StudentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [semesterFilter, setSemesterFilter] = useState("all");
+  const [errors, setErrors] = useState<FormErrors>({});
 
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -102,20 +118,153 @@ export default function StudentsPage() {
       password: "",
     });
     setEditingStudentId(null);
+    setErrors({});
+  };
+
+  // Validation functions
+  const validateEmail = (email: string): string | undefined => {
+    if (!email.trim()) return "Email is required";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    return undefined;
+  };
+
+  const validatePassword = (password: string): string | undefined => {
+    if (!password) return "Password is required";
+    if (password.length < 6) return "Password must be at least 6 characters";
+    return undefined;
+  };
+
+  const validateName = (name: string): string | undefined => {
+    if (!name.trim()) return "Name is required";
+    if (name.trim().length < 2) return "Name must be at least 2 characters";
+    return undefined;
+  };
+
+  const validateDepartment = (department: string): string | undefined => {
+    if (!department) return "Department is required";
+    return undefined;
+  };
+
+  const validateBatch = (batch: string): string | undefined => {
+    if (!batch.trim()) return "Batch is required";
+    const year = parseInt(batch);
+    if (isNaN(year) || year < 1900 || year > new Date().getFullYear() + 10) {
+      return "Please enter a valid year (e.g., 2023)";
+    }
+    return undefined;
+  };
+
+  const validateSemester = (semester: number): string | undefined => {
+    if (!semester || semester < 1 || semester > 8) {
+      return "Semester must be between 1 and 8";
+    }
+    return undefined;
+  };
+
+  const validateStudentId = (
+    studentId: string,
+    department: string,
+    batch: string
+  ): string | undefined => {
+    if (!studentId.trim()) return "Student ID is required";
+
+    // Expected format: 1RV<batch_last2><dept_code><3-4_digits>
+    // Example:
+    const val = Number(batch.slice(-2)) - 4;
+
+    const expectedPrefix = `1RV${val}${department}`;
+
+    if (!studentId.startsWith(expectedPrefix)) {
+      return `Student ID must start with ${expectedPrefix}`;
+    }
+
+    // const rollNumber = studentId.substring(expectedPrefix.length);
+    // if (!/^\d{3,4}$/.test(rollNumber)) {
+    //   return "Student ID must end with 3-4 digits";
+    // }
+
+    return undefined;
+  };
+
+  const validateCreateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    newErrors.name = validateName(formData.name || "");
+    newErrors.email = validateEmail(formData.email || "");
+    newErrors.password = validatePassword(formData.password || "");
+    newErrors.department = validateDepartment(formData.department || "");
+    newErrors.batch = validateBatch(formData.batch || "");
+    newErrors.semester = validateSemester(formData.semester || 0);
+
+    // Only validate student ID format if department and batch are valid
+    if (!newErrors.department && !newErrors.batch) {
+      newErrors.studentId = validateStudentId(
+        formData.studentId || "",
+        formData.department || "",
+        formData.batch || ""
+      );
+    } else if (!formData.studentId?.trim()) {
+      newErrors.studentId = "Student ID is required";
+    }
+
+    // Filter out undefined errors
+    const filteredErrors = Object.entries(newErrors).reduce(
+      (acc, [key, value]) => {
+        if (value) acc[key as keyof FormErrors] = value;
+        return acc;
+      },
+      {} as FormErrors
+    );
+
+    setErrors(filteredErrors);
+    return Object.keys(filteredErrors).length === 0;
+  };
+
+  const validateUpdateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (formData.name) {
+      newErrors.name = validateName(formData.name);
+    }
+    newErrors.department = validateDepartment(formData.department || "");
+    newErrors.batch = validateBatch(formData.batch || "");
+    newErrors.semester = validateSemester(formData.semester || 0);
+
+    if (formData.phoneNumber && formData.phoneNumber.trim()) {
+      if (!/^\d{10}$/.test(formData.phoneNumber)) {
+        newErrors.phoneNumber = "Phone number must be 10 digits";
+      }
+    }
+
+    // Filter out undefined errors
+    const filteredErrors = Object.entries(newErrors).reduce(
+      (acc, [key, value]) => {
+        if (value) acc[key as keyof FormErrors] = value;
+        return acc;
+      },
+      {} as FormErrors
+    );
+
+    setErrors(filteredErrors);
+    return Object.keys(filteredErrors).length === 0;
+  };
+
+  const clearError = (field: keyof FormErrors) => {
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[field];
+      return newErrors;
+    });
   };
 
   const handleCreate = async () => {
     try {
-      if (
-        !formData.name ||
-        !formData.department ||
-        !formData.email ||
-        !formData.password ||
-        !formData.studentId ||
-        !formData.batch ||
-        !formData.semester
-      ) {
-        toast.error("Please fill in all required fields");
+      // Validate form
+      if (!validateCreateForm()) {
+        toast.error("Validation failed", {
+          description: "Please fix the errors in the form",
+        });
         return;
       }
 
@@ -145,8 +294,11 @@ export default function StudentsPage() {
     try {
       if (!editingStudentId) return;
 
-      if (!formData.department || !formData.semester || !formData.batch) {
-        toast.error("Please fill in all required fields");
+      // Validate form
+      if (!validateUpdateForm()) {
+        toast.error("Validation failed", {
+          description: "Please fix the errors in the form",
+        });
         return;
       }
 
@@ -406,7 +558,7 @@ export default function StudentsPage() {
 
       {/* Create Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[calc(100vh-80px)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Student</DialogTitle>
             <DialogDescription>
@@ -423,23 +575,17 @@ export default function StudentsPage() {
                 id="name"
                 placeholder="e.g., John Doe"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  clearError("name");
+                }}
+                className={
+                  errors.name ? "border-red-500 focus-visible:ring-red-500" : ""
                 }
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="studentId">
-                Student ID <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="studentId"
-                placeholder="e.g., 1RV23IS056"
-                value={formData.studentId}
-                onChange={(e) =>
-                  setFormData({ ...formData, studentId: e.target.value })
-                }
-              />
+              {errors.name && (
+                <p className="text-sm text-red-500">{errors.name}</p>
+              )}
             </div>
 
             {/* Department */}
@@ -449,11 +595,16 @@ export default function StudentsPage() {
               </Label>
               <Select
                 value={formData.department}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, department: value })
-                }
+                onValueChange={(value) => {
+                  setFormData({ ...formData, department: value });
+                  clearError("department");
+                  clearError("studentId");
+                }}
               >
-                <SelectTrigger id="department">
+                <SelectTrigger
+                  id="department"
+                  className={errors.department ? "border-red-500" : ""}
+                >
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
@@ -464,6 +615,9 @@ export default function StudentsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {errors.department && (
+                <p className="text-sm text-red-500">{errors.department}</p>
+              )}
             </div>
 
             {/* Batch */}
@@ -473,12 +627,52 @@ export default function StudentsPage() {
               </Label>
               <Input
                 id="batch"
-                placeholder="e.g., 2025"
+                placeholder="e.g., 2023"
                 value={formData.batch}
-                onChange={(e) =>
-                  setFormData({ ...formData, batch: e.target.value })
+                onChange={(e) => {
+                  setFormData({ ...formData, batch: e.target.value });
+                  clearError("batch");
+                  clearError("studentId");
+                }}
+                className={
+                  errors.batch
+                    ? "border-red-500 focus-visible:ring-red-500"
+                    : ""
                 }
               />
+              {errors.batch && (
+                <p className="text-sm text-red-500">{errors.batch}</p>
+              )}
+            </div>
+
+            {/* Student ID with helper text */}
+            <div className="space-y-2">
+              <Label htmlFor="studentId">
+                Student ID <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="studentId"
+                placeholder="e.g., 1RV23IS056"
+                value={formData.studentId}
+                onChange={(e) => {
+                  setFormData({ ...formData, studentId: e.target.value });
+                  clearError("studentId");
+                }}
+                className={
+                  errors.studentId
+                    ? "border-red-500 focus-visible:ring-red-500"
+                    : ""
+                }
+              />
+              {formData.department && formData.batch && !errors.studentId && (
+                <p className="text-xs text-muted-foreground">
+                  Format: 1RV{formData.batch.slice(-2)}
+                  {formData.department}XXX (where XXX is 3-4 digits)
+                </p>
+              )}
+              {errors.studentId && (
+                <p className="text-sm text-red-500">{errors.studentId}</p>
+              )}
             </div>
 
             {/* Semester */}
@@ -489,12 +683,26 @@ export default function StudentsPage() {
               <Input
                 id="semester"
                 type="number"
+                min="1"
+                max="8"
                 placeholder="e.g., 5"
                 value={formData.semester}
-                onChange={(e) =>
-                  setFormData({ ...formData, semester: Number(e.target.value) })
+                onChange={(e) => {
+                  setFormData({
+                    ...formData,
+                    semester: Number(e.target.value),
+                  });
+                  clearError("semester");
+                }}
+                className={
+                  errors.semester
+                    ? "border-red-500 focus-visible:ring-red-500"
+                    : ""
                 }
               />
+              {errors.semester && (
+                <p className="text-sm text-red-500">{errors.semester}</p>
+              )}
             </div>
 
             {/* Email */}
@@ -505,12 +713,21 @@ export default function StudentsPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="e.g., example@domain.com"
+                placeholder="e.g., student@domain.com"
                 value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value });
+                  clearError("email");
+                }}
+                className={
+                  errors.email
+                    ? "border-red-500 focus-visible:ring-red-500"
+                    : ""
                 }
               />
+              {errors.email && (
+                <p className="text-sm text-red-500">{errors.email}</p>
+              )}
             </div>
 
             {/* Password */}
@@ -523,10 +740,19 @@ export default function StudentsPage() {
                 type="password"
                 placeholder="Enter password"
                 value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
+                onChange={(e) => {
+                  setFormData({ ...formData, password: e.target.value });
+                  clearError("password");
+                }}
+                className={
+                  errors.password
+                    ? "border-red-500 focus-visible:ring-red-500"
+                    : ""
                 }
               />
+              {errors.password && (
+                <p className="text-sm text-red-500">{errors.password}</p>
+              )}
             </div>
           </div>
 
@@ -590,11 +816,15 @@ export default function StudentsPage() {
               </Label>
               <Select
                 value={formData.department}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, department: value })
-                }
+                onValueChange={(value) => {
+                  setFormData({ ...formData, department: value });
+                  clearError("department");
+                }}
               >
-                <SelectTrigger id="edit-department">
+                <SelectTrigger
+                  id="edit-department"
+                  className={errors.department ? "border-red-500" : ""}
+                >
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
@@ -605,6 +835,9 @@ export default function StudentsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {errors.department && (
+                <p className="text-sm text-red-500">{errors.department}</p>
+              )}
             </div>
 
             {/* Semester */}
@@ -614,11 +847,15 @@ export default function StudentsPage() {
               </Label>
               <Select
                 value={formData.semester?.toString()}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, semester: Number(value) })
-                }
+                onValueChange={(value) => {
+                  setFormData({ ...formData, semester: Number(value) });
+                  clearError("semester");
+                }}
               >
-                <SelectTrigger id="edit-semester">
+                <SelectTrigger
+                  id="edit-semester"
+                  className={errors.semester ? "border-red-500" : ""}
+                >
                   <SelectValue placeholder="Select semester" />
                 </SelectTrigger>
                 <SelectContent>
@@ -629,6 +866,9 @@ export default function StudentsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {errors.semester && (
+                <p className="text-sm text-red-500">{errors.semester}</p>
+              )}
             </div>
 
             {/* Batch */}
@@ -638,12 +878,21 @@ export default function StudentsPage() {
               </Label>
               <Input
                 id="edit-batch"
-                placeholder="e.g., 2021-2025"
+                placeholder="e.g., 2023"
                 value={formData.batch}
-                onChange={(e) =>
-                  setFormData({ ...formData, batch: e.target.value })
+                onChange={(e) => {
+                  setFormData({ ...formData, batch: e.target.value });
+                  clearError("batch");
+                }}
+                className={
+                  errors.batch
+                    ? "border-red-500 focus-visible:ring-red-500"
+                    : ""
                 }
               />
+              {errors.batch && (
+                <p className="text-sm text-red-500">{errors.batch}</p>
+              )}
             </div>
 
             {/* Phone Number */}
@@ -651,12 +900,21 @@ export default function StudentsPage() {
               <Label htmlFor="edit-phone">Phone Number</Label>
               <Input
                 id="edit-phone"
-                placeholder="e.g., +1234567890"
+                placeholder="e.g., 9876543210"
                 value={formData.phoneNumber || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, phoneNumber: e.target.value })
+                onChange={(e) => {
+                  setFormData({ ...formData, phoneNumber: e.target.value });
+                  clearError("phoneNumber");
+                }}
+                className={
+                  errors.phoneNumber
+                    ? "border-red-500 focus-visible:ring-red-500"
+                    : ""
                 }
               />
+              {errors.phoneNumber && (
+                <p className="text-sm text-red-500">{errors.phoneNumber}</p>
+              )}
             </div>
 
             {/* Address */}

@@ -37,6 +37,8 @@ class UserOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
 # Student Schemas
 class StudentBase(BaseModel):
     studentId: str = Field(alias="studentId")
@@ -45,7 +47,7 @@ class StudentBase(BaseModel):
     batch: str
     phoneNumber: Optional[str]=None
     address: Optional[str] = None
-    date_of_birth: Optional[datetime] = Field(None, alias="dateOfBirth")
+    dateOfBirth: Optional[datetime] = Field(None, alias="dateOfBirth")
 
 class StudentUserCreate(StudentBase):
     email: EmailStr

@@ -40,7 +40,7 @@ export const useStudentService = () => {
       apiClient.get(`/students?skip=${skip}&limit=${limit}`),
 
     getById: async (id: string): Promise<Student> =>
-      apiClient.get(`/students/${id}`),
+      apiClient.get(`/students/id/${id}`),
 
     create: async (data: Partial<Student>): Promise<Student> =>
       apiClient.post("/students", data),

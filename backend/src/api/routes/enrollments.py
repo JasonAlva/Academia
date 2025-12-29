@@ -7,6 +7,16 @@ from src.config.database import prisma
 
 router = APIRouter()
 
+@router.get("/", response_model=List[EnrollmentResponse])
+async def get_all_enrollments(skip: int = 0, limit: int = 100, current_user: str = Depends(get_current_user)):
+    """Get all enrollments with pagination"""
+    enrollment_service = EnrollmentService(prisma)
+    try:
+        enrollments = await enrollment_service.list_enrollments_with_details(skip, limit)
+        return enrollments
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router.post("/", response_model=EnrollmentResponse)
 async def create_enrollment(enrollment: EnrollmentCreate, current_user: str = Depends(get_current_user)):
     try:

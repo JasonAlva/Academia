@@ -107,6 +107,11 @@ export const adminConfig: RoleConfig = {
       ],
     },
     {
+      title: "Enrollment",
+      url: "/admin/enrollments",
+      icon: IconCalendar,
+    },
+    {
       title: "Timetable",
       url: "/admin/timetable",
       icon: IconCalendar,
@@ -116,58 +121,18 @@ export const adminConfig: RoleConfig = {
       url: "/admin/attendance",
       icon: IconClipboardCheck,
     },
-    {
-      title: "Analytics",
-      url: "/admin/analytics",
-      icon: IconChartBar,
-      items: [
-        { title: "Overview", url: "/admin/analytics" },
-        { title: "Student Performance", url: "/admin/analytics/students" },
-        { title: "Course Statistics", url: "/admin/analytics/courses" },
-        { title: "Attendance Reports", url: "/admin/analytics/attendance" },
-      ],
-    },
   ],
 
   navSecondary: [
     {
-      title: "Notifications",
-      url: "/admin/notifications",
-      icon: IconBell,
-      badge: 5,
-    },
-    {
-      title: "Messages",
-      url: "/admin/messages",
-      icon: IconMessages,
+      title: "Profile",
+      url: "/admin/profile",
+      icon: IconUserCircle,
     },
     {
       title: "Settings",
       url: "/admin/settings",
       icon: IconSettings,
-    },
-    {
-      title: "Help",
-      url: "/admin/help",
-      icon: IconHelp,
-    },
-  ],
-
-  navDocuments: [
-    {
-      name: "Reports",
-      url: "/admin/reports",
-      icon: IconReportAnalytics,
-    },
-    {
-      name: "Attendance Records",
-      url: "/admin/records/attendance",
-      icon: IconClipboardCheck,
-    },
-    {
-      name: "Student Records",
-      url: "/admin/records/students",
-      icon: IconFileText,
     },
   ],
 };

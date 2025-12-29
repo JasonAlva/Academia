@@ -118,3 +118,70 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Sonner Toast Styling */
+:root {
+  --toast-success-bg: var(--popover);
+  --toast-success-text: var(--popover-foreground);
+  --toast-success-border: var(--border);
+  --toast-error-bg: var(--popover);
+  --toast-error-text: var(--popover-foreground);
+  --toast-error-border: var(--destructive);
+  --toast-warning-bg: var(--popover);
+  --toast-warning-text: var(--popover-foreground);
+  --toast-warning-border: var(--border);
+  --toast-info-bg: var(--popover);
+  --toast-info-text: var(--popover-foreground);
+  --toast-info-border: var(--border);
+}
+
+[data-sonner-toast] {
+  --normal-bg: var(--popover) !important;
+  --normal-text: var(--popover-foreground) !important;
+  --normal-border: var(--border) !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  --normal-bg: var(--popover) !important;
+  --normal-text: var(--popover-foreground) !important;
+  --normal-border: var(--destructive) !important;
+  --error-bg: var(--popover) !important;
+  --error-text: var(--popover-foreground) !important;
+  --error-border: var(--destructive) !important;
+}
+
+[data-sonner-toast] [data-description] {
+  opacity: 1 !important;
+  color: var(--popover-foreground) !important;
+  font-weight: 400 !important;
+}
+
+[data-sonner-toast] [data-title] {
+  opacity: 1 !important;
+  color: var(--popover-foreground) !important;
+  font-weight: 500 !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-description],
+[data-sonner-toast][data-type="error"] [data-title] {
+  color: var(--popover-foreground) !important;
+  opacity: 1 !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-description],
+[data-sonner-toast][data-type="success"] [data-title] {
+  color: var(--popover-foreground) !important;
+  opacity: 1 !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-description],
+[data-sonner-toast][data-type="warning"] [data-title] {
+  color: var(--popover-foreground) !important;
+  opacity: 1 !important;
+}
+
+[data-sonner-toast][data-type="info"] [data-description],
+[data-sonner-toast][data-type="info"] [data-title] {
+  color: var(--popover-foreground) !important;
+  opacity: 1 !important;
+}

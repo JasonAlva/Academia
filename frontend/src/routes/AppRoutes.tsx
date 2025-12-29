@@ -9,17 +9,13 @@ import ChatPage from "@/features/chat/ChatPage.tsx";
 
 import UnauthorizedPage from "../pages/errors/Unauthorized.tsx";
 
-// Import Dashboard Pages
-import StudentDashboard from "@/pages/student/StudentDashboard";
-import TeacherDashboard from "@/pages/teacher/TeacherDashboard";
-import AdminDashboard from "@/pages/admin/AdminDashboard";
-
 // Import Admin Feature Pages
 import AdminDepartmentsPage from "@/features/admin/DepartmentsPage";
 import AdminStudentsPage from "@/features/admin/StudentsPage";
 import AnalyticsPage from "@/features/admin/AnalyticsPage";
 import AdminCoursePage from "@/features/admin/CoursePage";
 import AdminAttendancePage from "@/features/admin/AttendancePage";
+import AdminEnrollmentsPage from "@/features/admin/EnrollmentsPage";
 
 // Import Teacher Feature Pages
 import TeacherCoursesPage from "@/features/teacher/CoursesPage";
@@ -32,6 +28,7 @@ import StudentAttendancePage from "@/features/student/StudentAttendancePage";
 import DashboardRoutes from "@/layout/DashboardRoutes.tsx";
 import TimeTablesPage from "@/features/timetable/TimeTablesPage.tsx";
 import TeachersPage from "@/features/admin/TeachersPage.tsx";
+import EnrollmentsPage from "@/features/admin/EnrollmentsPage";
 
 // ----------------------
 // Login Page
@@ -177,10 +174,26 @@ export default function AppRoutes() {
           }
         />
         <Route
+          path="/admin/enrollments"
+          element={
+            <ProtectedRoute allowed={["admin"]}>
+              <EnrollmentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/admin/courses"
           element={
             <ProtectedRoute allowed={["admin"]}>
               <AdminCoursePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/enrollments"
+          element={
+            <ProtectedRoute allowed={["admin"]}>
+              <AdminEnrollmentsPage />
             </ProtectedRoute>
           }
         />

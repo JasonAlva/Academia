@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage
-from src.agents.department_agent import create_department_agent
+from src.agents.admin_agent import create_admin_agent
 
 router = APIRouter()
 
@@ -16,7 +16,7 @@ async def query_with_agent(request: QueryRequest):
     
     try:
         # Create the agent
-        agent = create_department_agent()
+        agent = create_admin_agent()
         
         # Execute the query
         result = await agent.ainvoke({

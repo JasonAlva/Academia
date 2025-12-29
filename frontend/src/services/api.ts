@@ -1,5 +1,3 @@
-
-
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 export const useApiClient = () => {
@@ -16,7 +14,39 @@ export const useApiClient = () => {
       ...options,
       headers,
     });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+    if (!response.ok) {
+      let errorMessage = `Request failed with status ${response.status}`;
+
+      try {
+        const errorData = await response.json();
+
+        // Handle different error response formats
+        if (errorData.detail) {
+          if (typeof errorData.detail === "string") {
+            errorMessage = errorData.detail;
+          } else if (Array.isArray(errorData.detail)) {
+            // FastAPI validation errors
+            errorMessage = errorData.detail
+              .map((err: any) => {
+                const field = err.loc ? err.loc[err.loc.length - 1] : "field";
+                return `${field}: ${err.msg}`;
+              })
+              .join(", ");
+          } else if (typeof errorData.detail === "object") {
+            errorMessage = JSON.stringify(errorData.detail);
+          }
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch (e) {
+        // If parsing JSON fails, use the status text
+        errorMessage = response.statusText || errorMessage;
+      }
+
+      throw new Error(errorMessage);
+    }
+
     return response.json();
   };
 

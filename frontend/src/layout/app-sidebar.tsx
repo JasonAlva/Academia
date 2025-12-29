@@ -15,6 +15,7 @@ import { NavMain } from "./nav-main";
 import { NavSecondary } from "./nav-secondary";
 import { NavDocuments } from "./nav-documents";
 import { NavUser } from "./nav-user";
+import { Separator } from "@/components/ui/separator";
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   config: DashboardConfig;
@@ -47,6 +48,7 @@ export function AppSidebar({ config, ...props }: AppSidebarProps) {
         {config.navDocuments && config.navDocuments.length > 0 && (
           <NavDocuments items={config.navDocuments} />
         )}
+        <Separator />
         <NavSecondary items={config.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

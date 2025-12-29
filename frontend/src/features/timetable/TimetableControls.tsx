@@ -61,9 +61,9 @@ export function TimetableControls({
   onDepartmentChange,
 }: TimetableControlsProps) {
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 mb-6">
+    <div className="flex flex-col sm:flex-row items-start sm:justify-start sm:items-end gap-4 mb-6 ">
       {/* Semester Selection */}
-      <div className="flex-1 space-y-2 w-full sm:w-auto">
+      <div className=" space-y-2 w-full sm:w-auto">
         <Label htmlFor="semester-select">Semester</Label>
         <Select
           value={currentSemester.toString()}
@@ -80,7 +80,7 @@ export function TimetableControls({
       </div>
 
       {/* Department Selection */}
-      <div className="flex-1 space-y-2 w-full sm:w-auto">
+      <div className=" space-y-2 w-full sm:w-auto">
         <Label htmlFor="department-select">Department</Label>
         <Select value={currentDepartment} onValueChange={onDepartmentChange}>
           <SelectTrigger id="department-select" className="w-full sm:w-[280px]">

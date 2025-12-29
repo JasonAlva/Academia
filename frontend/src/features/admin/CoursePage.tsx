@@ -33,6 +33,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import {
   IconPlus,
   IconSearch,
@@ -65,6 +67,15 @@ interface CourseFormData {
   isActive: boolean;
 }
 
+interface FormErrors {
+  courseCode?: string;
+  courseName?: string;
+  credits?: string;
+  departmentId?: string;
+  semester?: string;
+  maxStudents?: string;
+}
+
 export default function CoursePage() {
   const {
     getAll: getCourses,
@@ -92,6 +103,7 @@ export default function CoursePage() {
 
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const [formData, setFormData] = useState<CourseFormData>({
     courseCode: "",
@@ -161,16 +173,95 @@ export default function CoursePage() {
       teacherId: "",
       isActive: true,
     });
+    setErrors({});
+    setSelectedCourse(null);
+  };
+
+  // Validation functions
+  const validateCourseCode = (code: string): string | undefined => {
+    if (!code.trim()) return "Course code is required";
+    if (code.trim().length < 2)
+      return "Course code must be at least 2 characters";
+    if (!/^[A-Z0-9]+$/i.test(code))
+      return "Course code must contain only letters and numbers";
+    return undefined;
+  };
+
+  const validateCourseName = (name: string): string | undefined => {
+    if (!name.trim()) return "Course name is required";
+    if (name.trim().length < 3)
+      return "Course name must be at least 3 characters";
+    return undefined;
+  };
+
+  const validateCredits = (credits: number): string | undefined => {
+    if (!credits || credits < 1 || credits > 10) {
+      return "Credits must be between 1 and 10";
+    }
+    return undefined;
+  };
+
+  const validateDepartment = (departmentId: string): string | undefined => {
+    if (!departmentId) return "Department is required";
+    return undefined;
+  };
+
+  const validateSemester = (semester: number): string | undefined => {
+    if (!semester || semester < 1 || semester > 8) {
+      return "Semester must be between 1 and 8";
+    }
+    return undefined;
+  };
+
+  const validateMaxStudents = (maxStudents?: number): string | undefined => {
+    if (maxStudents && (maxStudents < 1 || maxStudents > 500)) {
+      return "Max students must be between 1 and 500";
+    }
+    return undefined;
+  };
+
+  const validateCreateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    newErrors.courseCode = validateCourseCode(formData.courseCode);
+    newErrors.courseName = validateCourseName(formData.courseName);
+    newErrors.credits = validateCredits(formData.credits);
+    newErrors.departmentId = validateDepartment(formData.departmentId);
+    newErrors.semester = validateSemester(formData.semester);
+    newErrors.maxStudents = validateMaxStudents(formData.maxStudents);
+
+    // Filter out undefined errors
+    const filteredErrors = Object.entries(newErrors).reduce(
+      (acc, [key, value]) => {
+        if (value) acc[key as keyof FormErrors] = value;
+        return acc;
+      },
+      {} as FormErrors
+    );
+
+    setErrors(filteredErrors);
+    return Object.keys(filteredErrors).length === 0;
+  };
+
+  const validateUpdateForm = (): boolean => {
+    return validateCreateForm(); // Same validation for update
+  };
+
+  const clearError = (field: keyof FormErrors) => {
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[field];
+      return newErrors;
+    });
   };
 
   const handleCreate = async () => {
     try {
-      if (
-        !formData.courseCode ||
-        !formData.courseName ||
-        !formData.departmentId
-      ) {
-        toast.error("Please fill in all required fields");
+      // Validate form
+      if (!validateCreateForm()) {
+        toast.error("Validation failed", {
+          description: "Please fix the errors in the form",
+        });
         return;
       }
 
@@ -200,6 +291,7 @@ export default function CoursePage() {
       teacherId: course.teacherId || "",
       isActive: course.isActive,
     });
+    setErrors({});
     setShowEditDialog(true);
   };
 
@@ -207,6 +299,14 @@ export default function CoursePage() {
     if (!selectedCourse) return;
 
     try {
+      // Validate form
+      if (!validateUpdateForm()) {
+        toast.error("Validation failed", {
+          description: "Please fix the errors in the form",
+        });
+        return;
+      }
+
       await update(selectedCourse.id, formData);
       toast.success("Course updated successfully");
       setShowEditDialog(false);
@@ -441,6 +541,14 @@ export default function CoursePage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {Object.keys(errors).length > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Please fix the errors below before submitting.
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="courseCode">
@@ -450,10 +558,15 @@ export default function CoursePage() {
                   id="courseCode"
                   placeholder="e.g., CS101"
                   value={formData.courseCode}
-                  onChange={(e) =>
-                    setFormData({ ...formData, courseCode: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, courseCode: e.target.value });
+                    clearError("courseCode");
+                  }}
+                  className={errors.courseCode ? "border-red-500" : ""}
                 />
+                {errors.courseCode && (
+                  <p className="text-sm text-red-500">{errors.courseCode}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="credits">
@@ -465,13 +578,18 @@ export default function CoursePage() {
                   min="1"
                   max="10"
                   value={formData.credits}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData({
                       ...formData,
                       credits: parseInt(e.target.value) || 3,
-                    })
-                  }
+                    });
+                    clearError("credits");
+                  }}
+                  className={errors.credits ? "border-red-500" : ""}
                 />
+                {errors.credits && (
+                  <p className="text-sm text-red-500">{errors.credits}</p>
+                )}
               </div>
             </div>
 
@@ -483,10 +601,15 @@ export default function CoursePage() {
                 id="courseName"
                 placeholder="e.g., Introduction to Computer Science"
                 value={formData.courseName}
-                onChange={(e) =>
-                  setFormData({ ...formData, courseName: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, courseName: e.target.value });
+                  clearError("courseName");
+                }}
+                className={errors.courseName ? "border-red-500" : ""}
               />
+              {errors.courseName && (
+                <p className="text-sm text-red-500">{errors.courseName}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -496,11 +619,14 @@ export default function CoursePage() {
                 </Label>
                 <Select
                   value={formData.departmentId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, departmentId: value })
-                  }
+                  onValueChange={(value) => {
+                    setFormData({ ...formData, departmentId: value });
+                    clearError("departmentId");
+                  }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger
+                    className={errors.departmentId ? "border-red-500" : ""}
+                  >
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
@@ -511,18 +637,24 @@ export default function CoursePage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.departmentId && (
+                  <p className="text-sm text-red-500">{errors.departmentId}</p>
+                )}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 justify-self-end">
                 <Label htmlFor="semester">
                   Semester <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={formData.semester.toString()}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, semester: parseInt(value) })
-                  }
+                  onValueChange={(value) => {
+                    setFormData({ ...formData, semester: parseInt(value) });
+                    clearError("semester");
+                  }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger
+                    className={errors.semester ? "border-red-500" : ""}
+                  >
                     <SelectValue placeholder="Select semester" />
                   </SelectTrigger>
                   <SelectContent>
@@ -533,6 +665,9 @@ export default function CoursePage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.semester && (
+                  <p className="text-sm text-red-500">{errors.semester}</p>
+                )}
               </div>
             </div>
 
@@ -549,7 +684,7 @@ export default function CoursePage() {
                     <SelectValue placeholder="Select teacher" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Not Assigned</SelectItem>
+                    <SelectItem value="none">Not Assigned</SelectItem>
                     {teachers.map((teacher) => (
                       <SelectItem key={teacher.id} value={teacher.id}>
                         {teacher.user?.name} ({teacher.teacherId})
@@ -565,13 +700,18 @@ export default function CoursePage() {
                   type="number"
                   min="1"
                   value={formData.maxStudents}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData({
                       ...formData,
                       maxStudents: parseInt(e.target.value) || 60,
-                    })
-                  }
+                    });
+                    clearError("maxStudents");
+                  }}
+                  className={errors.maxStudents ? "border-red-500" : ""}
                 />
+                {errors.maxStudents && (
+                  <p className="text-sm text-red-500">{errors.maxStudents}</p>
+                )}
               </div>
             </div>
 
@@ -622,7 +762,10 @@ export default function CoursePage() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setShowCreateDialog(false)}
+              onClick={() => {
+                setShowCreateDialog(false);
+                resetForm();
+              }}
             >
               Cancel
             </Button>
@@ -639,6 +782,14 @@ export default function CoursePage() {
             <DialogDescription>Update course information</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {Object.keys(errors).length > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Please fix the errors below before submitting.
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-courseCode">
@@ -648,10 +799,15 @@ export default function CoursePage() {
                   id="edit-courseCode"
                   placeholder="e.g., CS101"
                   value={formData.courseCode}
-                  onChange={(e) =>
-                    setFormData({ ...formData, courseCode: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, courseCode: e.target.value });
+                    clearError("courseCode");
+                  }}
+                  className={errors.courseCode ? "border-red-500" : ""}
                 />
+                {errors.courseCode && (
+                  <p className="text-sm text-red-500">{errors.courseCode}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-credits">
@@ -663,13 +819,18 @@ export default function CoursePage() {
                   min="1"
                   max="10"
                   value={formData.credits}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData({
                       ...formData,
                       credits: parseInt(e.target.value) || 3,
-                    })
-                  }
+                    });
+                    clearError("credits");
+                  }}
+                  className={errors.credits ? "border-red-500" : ""}
                 />
+                {errors.credits && (
+                  <p className="text-sm text-red-500">{errors.credits}</p>
+                )}
               </div>
             </div>
 
@@ -681,10 +842,15 @@ export default function CoursePage() {
                 id="edit-courseName"
                 placeholder="e.g., Introduction to Computer Science"
                 value={formData.courseName}
-                onChange={(e) =>
-                  setFormData({ ...formData, courseName: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, courseName: e.target.value });
+                  clearError("courseName");
+                }}
+                className={errors.courseName ? "border-red-500" : ""}
               />
+              {errors.courseName && (
+                <p className="text-sm text-red-500">{errors.courseName}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -694,11 +860,14 @@ export default function CoursePage() {
                 </Label>
                 <Select
                   value={formData.departmentId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, departmentId: value })
-                  }
+                  onValueChange={(value) => {
+                    setFormData({ ...formData, departmentId: value });
+                    clearError("departmentId");
+                  }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger
+                    className={errors.departmentId ? "border-red-500" : ""}
+                  >
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
@@ -709,6 +878,9 @@ export default function CoursePage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.departmentId && (
+                  <p className="text-sm text-red-500">{errors.departmentId}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-semester">
@@ -716,11 +888,14 @@ export default function CoursePage() {
                 </Label>
                 <Select
                   value={formData.semester.toString()}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, semester: parseInt(value) })
-                  }
+                  onValueChange={(value) => {
+                    setFormData({ ...formData, semester: parseInt(value) });
+                    clearError("semester");
+                  }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger
+                    className={errors.semester ? "border-red-500" : ""}
+                  >
                     <SelectValue placeholder="Select semester" />
                   </SelectTrigger>
                   <SelectContent>
@@ -731,6 +906,9 @@ export default function CoursePage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.semester && (
+                  <p className="text-sm text-red-500">{errors.semester}</p>
+                )}
               </div>
             </div>
 
@@ -747,7 +925,7 @@ export default function CoursePage() {
                     <SelectValue placeholder="Select teacher" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Not Assigned</SelectItem>
+                    <SelectItem value="none">Not Assigned</SelectItem>
                     {teachers.map((teacher) => (
                       <SelectItem key={teacher.id} value={teacher.id}>
                         {teacher.user?.name} ({teacher.teacherId})
@@ -763,13 +941,18 @@ export default function CoursePage() {
                   type="number"
                   min="1"
                   value={formData.maxStudents}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData({
                       ...formData,
                       maxStudents: parseInt(e.target.value) || 60,
-                    })
-                  }
+                    });
+                    clearError("maxStudents");
+                  }}
+                  className={errors.maxStudents ? "border-red-500" : ""}
                 />
+                {errors.maxStudents && (
+                  <p className="text-sm text-red-500">{errors.maxStudents}</p>
+                )}
               </div>
             </div>
 

@@ -13,15 +13,26 @@ async def get_students(skip: int = 0, limit: int = 10):
     students = await student_service.list_students()
     return students[skip:skip+limit]
 
-@router.get("/{student_id}", response_model=StudentOut)
-async def get_student(student_id: str):
+@router.get("/id/{id}", response_model=StudentOut)
+async def get_student_by_uuid(id: str):
+    """Get student by database UUID"""
     student_service = StudentService(prisma)
-    student = await student_service.get_student(student_id)
+    student = await student_service.get_student(id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     return student
 
-@router.get("/user/{user_id}", response_model=StudentOut)
+@router.get("/studentId/{student_id}", response_model=StudentOut)
+async def get_student_by_id(student_id: str):
+    """Get student by studentId (e.g., 1RV23IS056)"""
+    print(student_id)
+    student_service = StudentService(prisma)
+    student = await student_service.get_student_by_id(student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student
+
+@router.get("/userId/{user_id}", response_model=StudentOut)
 async def get_student_by_user_id(user_id: str):
     """Get student profile by user ID"""
     student_service = StudentService(prisma)

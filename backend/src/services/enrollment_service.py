@@ -37,6 +37,32 @@ class EnrollmentService:
         where = {'student_id': student_id} if student_id else {}
         enrollments = await self.db.enrollment.find_many(where=where)
         return [EnrollmentResponse.model_validate(e) for e in enrollments]
+    
+    async def list_enrollments_with_details(self, skip: int = 0, limit: int = 100):
+        """Get all enrollments with student and course details"""
+        enrollments = await self.db.enrollment.find_many(
+            skip=skip,
+            take=limit,
+            include={
+                'student': {
+                    'include': {
+                        'user': True
+                    }
+                },
+                'course': {
+                    'include': {
+                        'teacher': {
+                            'include': {
+                                'user': True
+                            }
+                        },
+                        'department': True
+                    }
+                }
+            },
+            order={'enrolledAt': 'desc'}
+        )
+        return enrollments
 
     async def get_student_enrollments_with_courses(self, student_id: str):
         """Get all enrollments for a student with full course and teacher details"""

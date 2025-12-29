@@ -7,9 +7,9 @@ class StudentService:
     def __init__(self, db: Prisma):
         self.db = db
 
-    async def get_student(self, student_id: str) -> Optional[StudentModel]:
+    async def get_student(self, id: str) -> Optional[StudentModel]:
         student = await self.db.student.find_unique(
-            where={"id": student_id},
+            where={"id": id},
             include={"user": True}
         )
         return student
@@ -18,6 +18,15 @@ class StudentService:
         """Get student by their user ID"""
         student = await self.db.student.find_unique(
             where={"userId": user_id},
+            include={"user": True}
+        )
+        return student
+    
+    async def get_student_by_id(self, student_id: str) -> Optional[StudentModel]:
+        """Get student by their student ID"""
+        print(student_id)
+        student = await self.db.student.find_unique(
+            where={"studentId": student_id},
             include={"user": True}
         )
         return student
@@ -49,10 +58,10 @@ class StudentService:
             )
         return student
 
-    async def delete_student(self, student_id: str) -> Optional[StudentModel]:
+    async def delete_student(self, id: str) -> Optional[StudentModel]:
         # First get the student to find the userId
         student = await self.db.student.find_unique(
-            where={"id": student_id},
+            where={"id": id},
             include={"user": True}
         )
         if not student:

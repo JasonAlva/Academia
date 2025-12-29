@@ -1,16 +1,19 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
-from src.models.schemas import CourseCreate, CourseUpdate
+from src.models.schemas import CourseCreate, CourseUpdate, CourseOut
 from prisma.models import Course
 from src.services.course_service import CourseService
 from src.config.database import prisma
 
 router = APIRouter()
 
-@router.post("/", response_model=Course)
+@router.post("/", response_model=CourseOut)
 async def create_course(course: CourseCreate):
     course_service = CourseService(prisma)
-    return await course_service.create_course(course.dict())
+    created_course = await course_service.create_course(course)
+    # Fetch with relations
+    complete_course = await course_service.get_course_by_id(created_course.id)
+    return complete_course
 
 @router.get("/", response_model=List[Course])
 async def get_courses():
@@ -28,10 +31,12 @@ async def get_course(course_id: str):
 @router.put("/{course_id}", response_model=Course)
 async def update_course(course_id: str, course: CourseUpdate):
     course_service = CourseService(prisma)
-    updated_course = await course_service.update_course(course_id, course.dict(exclude_unset=True))
+    updated_course = await course_service.update_course(course_id, course)
     if not updated_course:
         raise HTTPException(status_code=404, detail="Course not found")
-    return updated_course
+    # Fetch with relations
+    complete_course = await course_service.get_course_by_id(updated_course.id)
+    return complete_course
 
 @router.delete("/{course_id}", response_model=dict)
 async def delete_course(course_id: str):
