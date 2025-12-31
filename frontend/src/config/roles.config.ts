@@ -153,7 +153,7 @@ export const teacherConfig: RoleConfig = {
       title: "My Courses",
       url: "/teacher/courses",
       icon: IconBook,
-      badge: "6",
+
       items: [
         { title: "Active Courses", url: "/teacher/courses" },
         { title: "Course Materials", url: "/teacher/courses/materials" },
@@ -179,34 +179,15 @@ export const teacherConfig: RoleConfig = {
         { title: "Reports", url: "/teacher/attendance/reports" },
       ],
     },
+
     {
-      title: "Grades",
-      url: "/teacher/grades",
-      icon: IconTrophy,
-      items: [
-        { title: "Grade Book", url: "/teacher/grades" },
-        { title: "Submit Grades", url: "/teacher/grades/submit" },
-      ],
-    },
-    {
-      title: "Schedule",
-      url: "/teacher/schedule",
+      title: "Schedules",
+      url: "/teacher/schedules",
       icon: IconCalendar,
-    },
-    {
-      title: "Messages",
-      url: "/teacher/messages",
-      icon: IconMessages,
-      badge: 3,
     },
   ],
 
   navSecondary: [
-    {
-      title: "Notifications",
-      url: "/teacher/notifications",
-      icon: IconBell,
-    },
     {
       title: "Profile",
       url: "/teacher/profile",
@@ -216,29 +197,6 @@ export const teacherConfig: RoleConfig = {
       title: "Settings",
       url: "/teacher/settings",
       icon: IconSettings,
-    },
-    {
-      title: "Help",
-      url: "/teacher/help",
-      icon: IconHelp,
-    },
-  ],
-
-  navDocuments: [
-    {
-      name: "Grade Reports",
-      url: "/teacher/reports/grades",
-      icon: IconReportAnalytics,
-    },
-    {
-      name: "Class Materials",
-      url: "/teacher/materials",
-      icon: IconNotes,
-    },
-    {
-      name: "Attendance Sheets",
-      url: "/teacher/reports/attendance",
-      icon: IconFileText,
     },
   ],
 };

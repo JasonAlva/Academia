@@ -242,6 +242,7 @@ class DepartmentResponse(DepartmentBase):
 class CourseBase(BaseModel):
     course_code: str = Field(alias="courseCode")
     course_name: str = Field(alias="courseName")
+    teacherId: Optional[str] = None
     credits: int
     department_id: str = Field(alias="departmentId")
     semester: int
@@ -257,6 +258,7 @@ class CourseUpdate(BaseModel):
     course_code: Optional[str] = Field(None, alias="courseCode")
     course_name: Optional[str] = Field(None, alias="courseName")
     credits: Optional[int] = None
+    teacherId: Optional[str] = None
     department_id: Optional[str] = Field(None, alias="departmentId")
     semester: Optional[int] = None
     description: Optional[str] = None

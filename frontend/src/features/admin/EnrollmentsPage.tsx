@@ -508,8 +508,7 @@ export default function EnrollmentsPage() {
                   <TableHead>Course Name</TableHead>
                   <TableHead>Semester</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Grade</TableHead>
-                  <TableHead>Grade Points</TableHead>
+
                   <TableHead>Enrolled At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -549,10 +548,7 @@ export default function EnrollmentsPage() {
                         {enrollment.student?.semester || "N/A"}
                       </TableCell>
                       <TableCell>{getStatusBadge(enrollment.status)}</TableCell>
-                      <TableCell>{getGradeBadge(enrollment.grade)}</TableCell>
-                      <TableCell>
-                        {enrollment.gradePoints?.toFixed(2) || "N/A"}
-                      </TableCell>
+
                       <TableCell>
                         {new Date(enrollment.enrolledAt).toLocaleDateString()}
                       </TableCell>

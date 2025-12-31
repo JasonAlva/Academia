@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { IconBell, IconSearch } from "@tabler/icons-react";
@@ -18,14 +19,12 @@ export function TopBar({ title = "Dashboard" }: TopBarProps) {
         />
         <h1 className="text-base font-medium">{title}</h1>
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="rounded-full">
+          {/* <Button variant="ghost" size="icon" className="rounded-full">
             <IconSearch className="size-5" />
             <span className="sr-only">Search</span>
-          </Button>
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <IconBell className="size-5" />
-            <span className="sr-only">Notifications</span>
-          </Button>
+          </Button> */}
+
+          <ModeToggle />
         </div>
       </div>
     </header>

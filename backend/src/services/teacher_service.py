@@ -45,3 +45,35 @@ class TeacherService:
     async def list_teachers(self) -> List[Teacher]:
         teachers = await self.db.teacher.find_many(include={"user": True})
         return teachers
+
+    async def get_teacher_courses(self, teacher_id: str):
+        """Get all courses taught by a specific teacher."""
+        courses = await self.db.course.find_many(
+            where={"teacherId": teacher_id},
+            include={
+                "department": True,
+                "enrollments": True,
+                "teacher": {"include": {"user": True}}
+            }
+        )
+        return courses
+
+    async def get_teacher_courses_with_students(self, teacher_id: str):
+        """Get all courses taught by a teacher with enrolled students."""
+        courses = await self.db.course.find_many(
+            where={"teacherId": teacher_id, "isActive": True},
+            include={
+                "department": True,
+                "enrollments": {
+                    "where": {"status": "ACTIVE"},
+                    "include": {
+                        "student": {
+                            "include": {"user": True}
+                        }
+                    }
+                },
+                "teacher": {"include": {"user": True}}
+            },
+            order={"semester": "asc"}
+        )
+        return courses

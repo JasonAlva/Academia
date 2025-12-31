@@ -14,6 +14,26 @@ export interface Course {
   teacherId?: string;
   createdAt: string;
   updatedAt: string;
+  teacher?: {
+    id: string;
+    teacherId: string;
+    department: string;
+    user?: {
+      id: string;
+      name: string;
+      email: string;
+    };
+  };
+  department?: {
+    id: string;
+    departmentName: string;
+    departmentCode: string;
+  };
+  enrollments?: Array<{
+    id: string;
+    studentId: string;
+    courseId: string;
+  }>;
 }
 
 // Hook-based service
@@ -25,6 +45,9 @@ export const useCourseService = () => {
 
     getById: async (id: string): Promise<Course> =>
       apiClient.get(`/courses/${id}`),
+
+    getTeacherCourses: async (teacherId: string): Promise<Course[]> =>
+      apiClient.get(`/teachers/${teacherId}/courses`),
 
     create: async (data: Partial<Course>): Promise<Course> =>
       apiClient.post("/courses", data),

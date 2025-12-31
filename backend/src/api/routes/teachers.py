@@ -4,6 +4,8 @@ from src.services.teacher_service import TeacherService
 from src.services.user_service import UserService
 from src.api.dependencies import get_current_user
 from src.config.database import prisma
+from typing import List
+from prisma.models import Course
 
 router = APIRouter()
 
@@ -48,6 +50,26 @@ async def create_teacher(teacher: TeacherCreateWithUser, current_user: UserRespo
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/{teacher_id}/courses", response_model=List[Course])
+async def get_teacher_courses(
+    teacher_id: str,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Get all courses taught by a specific teacher."""
+    teacher_service = TeacherService(prisma)
+    courses = await teacher_service.get_teacher_courses(teacher_id)
+    return courses
+
+@router.get("/{teacher_id}/courses-with-students")
+async def get_teacher_courses_with_students(
+    teacher_id: str,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Get all courses taught by a teacher with enrolled students."""
+    teacher_service = TeacherService(prisma)
+    courses = await teacher_service.get_teacher_courses_with_students(teacher_id)
+    return courses
 
 @router.get("/{teacher_id}", response_model=TeacherResponse)
 async def get_teacher(teacher_id: str, current_user: UserResponse = Depends(get_current_user)):

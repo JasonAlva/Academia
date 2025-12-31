@@ -46,6 +46,9 @@ export const useTeacherService = () => {
     getById: async (id: string): Promise<Teacher> =>
       apiClient.get(`/teachers/${id}`),
 
+    getCoursesWithStudents: async (teacherId: string) =>
+      apiClient.get(`/teachers/${teacherId}/courses-with-students`),
+
     create: async (data: Partial<Teacher>): Promise<Teacher> =>
       apiClient.post("/teachers", data),
 

@@ -64,6 +64,56 @@ class ScheduleService:
     async def get_teacher_schedule(self, teacher_id: str) -> List[ScheduleResponse]:
         return await self.get_schedules(teacher_id=teacher_id)
 
+    async def get_teacher_timetable_grid(self, teacher_id: str) -> List[List[Optional[List[str]]]]:
+        """
+        Get teacher's timetable in grid format
+        Returns: List[day][period] = [teacher, subject, room] or None
+        Structure: 5 days, 9 periods
+        """
+        DAYS = 5
+        PERIODS = 9
+        
+        # Day mapping
+        DAY_INDEX = {
+            "MONDAY": 0,
+            "TUESDAY": 1,
+            "WEDNESDAY": 2,
+            "THURSDAY": 3,
+            "FRIDAY": 4
+        }
+        
+        # Initialize empty timetable
+        timetable = [[None for _ in range(PERIODS)] for _ in range(DAYS)]
+        
+        # Fetch teacher's schedules
+        schedules = await self.db.schedule.find_many(
+            where={'teacherId': teacher_id},
+            include={
+                'course': True,
+                'teacher': {
+                    'include': {'user': True}
+                }
+            }
+        )
+        
+        # Fill timetable
+        for s in schedules:
+            day_idx = DAY_INDEX.get(s.dayOfWeek)
+            if day_idx is None:
+                continue
+                
+            period_idx = self._parse_time_to_period(s.startTime)
+            if period_idx is None:
+                continue
+            
+            timetable[day_idx][period_idx] = [
+                s.teacher.user.name if s.teacher and s.teacher.user else "Unknown",
+                s.course.courseCode,
+                s.room or "TBA"
+            ]
+        
+        return timetable
+
     async def get_course_schedule(self, course_id: str) -> List[ScheduleResponse]:
         return await self.get_schedules(course_id=course_id)
 
