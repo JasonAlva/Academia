@@ -79,7 +79,7 @@ export const useStudentCourseService = () => {
      * Get student profile by user ID
      */
     getStudentByUserId: async (userId: string): Promise<StudentProfile> => {
-      return apiClient.get(`/students/user/${userId}`);
+      return apiClient.get(`/students/userId/${userId}`);
     },
 
     /**

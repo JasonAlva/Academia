@@ -28,6 +28,15 @@ async def get_teacher_timetable(
     schedule_service = ScheduleService(prisma)
     return await schedule_service.get_teacher_timetable_grid(teacher_id)
 
+@router.get("/student/{student_id}/timetable")
+async def get_student_timetable(
+    student_id: str,
+    current_user: str = Depends(get_current_user)
+):
+    """Get student's timetable in grid format"""
+    schedule_service = ScheduleService(prisma)
+    return await schedule_service.get_student_timetable_grid(student_id)
+
 @router.get("/subjects-details")
 async def get_subjects_details(current_user: str = Depends(get_current_user)):
     """Get subject details with teacher names and room codes"""

@@ -107,6 +107,10 @@ class TimetableService {
     const api = this.getApi();
     return api.get(`/schedules/teacher/${teacherId}/timetable`);
   }
+  async getStudentTimetable(studentId: string): Promise<any> {
+    const api = this.getApi();
+    return api.get(`/schedules/student/${studentId}/timetable`);
+  }
 
   // Get a specific schedule by ID
   async getScheduleById(scheduleId: string): Promise<Schedule> {

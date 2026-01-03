@@ -209,15 +209,15 @@ export const studentConfig: RoleConfig = {
 
   navMain: [
     {
-      title: "Dashboard",
-      url: "/student/dashboard",
+      title: "Chat",
+      url: "/student/chat",
       icon: IconDashboard,
     },
     {
       title: "My Courses",
       url: "/student/courses",
       icon: IconBook,
-      badge: "5",
+
       items: [
         { title: "All Courses", url: "/student/courses" },
         { title: "Course Materials", url: "/student/courses/materials" },
@@ -242,31 +242,9 @@ export const studentConfig: RoleConfig = {
         { title: "Attendance History", url: "/student/attendance/history" },
       ],
     },
-    {
-      title: "Grades",
-      url: "/student/grades",
-      icon: IconTrophy,
-      items: [
-        { title: "Current Grades", url: "/student/grades" },
-        { title: "Grade History", url: "/student/grades/history" },
-        { title: "GPA Calculator", url: "/student/grades/calculator" },
-      ],
-    },
-    {
-      title: "Messages",
-      url: "/student/messages",
-      icon: IconMessages,
-      badge: 2,
-    },
   ],
 
   navSecondary: [
-    {
-      title: "Notifications",
-      url: "/student/notifications",
-      icon: IconBell,
-      badge: 4,
-    },
     {
       title: "Profile",
       url: "/student/profiles",
@@ -276,29 +254,6 @@ export const studentConfig: RoleConfig = {
       title: "Settings",
       url: "/student/settings",
       icon: IconSettings,
-    },
-    {
-      title: "Help",
-      url: "/student/help",
-      icon: IconHelp,
-    },
-  ],
-
-  navDocuments: [
-    {
-      name: "Course Materials",
-      url: "/student/materials",
-      icon: IconNotes,
-    },
-    {
-      name: "Transcripts",
-      url: "/student/transcripts",
-      icon: IconFileText,
-    },
-    {
-      name: "Certificates",
-      url: "/student/certificates",
-      icon: IconTrophy,
     },
   ],
 };

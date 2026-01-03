@@ -42,6 +42,9 @@ export const useStudentService = () => {
     getById: async (id: string): Promise<Student> =>
       apiClient.get(`/students/id/${id}`),
 
+    getByUserId: async (id: string): Promise<Student> =>
+      apiClient.get(`/students/userId/${id}`),
+
     create: async (data: Partial<Student>): Promise<Student> =>
       apiClient.post("/students", data),
 

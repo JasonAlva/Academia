@@ -25,12 +25,14 @@ import TeacherTimeTablePage from "@/features/teacher/TimeTablePage.tsx";
 
 // Import Student Feature Pages
 import StudentCoursesPage from "@/features/student/CoursesPage";
+import StudentSchedulePage from "@/features/student/StudentTimeTablePage.tsx";
 import StudentGradesPage from "@/features/student/GradesPage";
 import StudentAttendancePage from "@/features/student/StudentAttendancePage";
 import DashboardRoutes from "@/layout/DashboardRoutes.tsx";
 import TimeTablesPage from "@/features/timetable/TimeTablesPage.tsx";
 import TeachersPage from "@/features/admin/TeachersPage.tsx";
 import EnrollmentsPage from "@/features/admin/EnrollmentsPage";
+
 import StudentsPage from "@/features/admin/StudentsPage";
 
 // ----------------------
@@ -93,10 +95,10 @@ export default function AppRoutes() {
           }
         />
         <Route
-          path="/student/grades"
+          path="/student/schedule"
           element={
             <ProtectedRoute allowed={["student"]}>
-              <StudentGradesPage />
+              <StudentSchedulePage />
             </ProtectedRoute>
           }
         />

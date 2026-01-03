@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { timetableService } from "@/services/timeTableService";
 import { useTeacherService } from "@/services/teacherService";
+import { useStudentService } from "@/services/studentService";
 
 type PeriodDetails = [string, string, string] | null; // [teacher, subject, room]
 type DaySchedule = PeriodDetails[];
@@ -32,43 +33,45 @@ const BREAK_PERIODS = [2, 5]; // Index 2 is break time
 
 export default function TeacherTimeTablePage() {
   const { user } = useAuth();
-  const teacherService = useTeacherService();
+  const studentService = useStudentService();
 
   const [timetable, setTimetable] = useState<TimeTableType>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [teacherId, setTeacherId] = useState<string | null>(null);
+  const [studentId, setStudentId] = useState<string | null>(null);
 
   // Fetch teacher ID from user ID
   useEffect(() => {
-    const fetchTeacherId = async () => {
+    const fetchStudentId = async () => {
       if (!user?.id) return;
 
       try {
-        const teachers = await teacherService.getAll();
-        const teacher = teachers.find((t) => t.userId === user.id);
-        if (teacher) {
-          setTeacherId(teacher.id);
+        const student = await studentService.getByUserId(user.id);
+
+        if (student) {
+          setStudentId(student.id);
+          console.log(student);
+          console.log("studentid macha");
         } else {
-          setError("Teacher profile not found");
+          setError("Student profile not found");
         }
       } catch (err) {
-        console.error("Failed to fetch teacher profile:", err);
-        setError("Failed to load teacher profile");
+        console.error("Failed to fetch Student profile:", err);
+        setError("Failed to load Student profile");
       }
     };
 
-    fetchTeacherId();
+    fetchStudentId();
   }, [user]);
 
   // Fetch teacher's timetable
   useEffect(() => {
     const fetchTimetable = async () => {
-      if (!teacherId) return;
+      if (!studentId) return;
 
       try {
         setLoading(true);
-        const data = await timetableService.getTeacherTimetable(teacherId);
+        const data = await timetableService.getStudentTimetable(studentId);
         setTimetable(data);
         setError(null);
       } catch (err) {
@@ -80,7 +83,7 @@ export default function TeacherTimeTablePage() {
     };
 
     fetchTimetable();
-  }, [teacherId]);
+  }, [studentId]);
 
   const isBreak = (periodIndex: number) => {
     return BREAK_PERIODS.includes(periodIndex);
