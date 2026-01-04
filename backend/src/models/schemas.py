@@ -317,7 +317,8 @@ class ScheduleBase(BaseModel):
     is_active: bool = Field(True, alias="isActive")
 
 class ScheduleCreate(ScheduleBase):
-    pass
+    class Config:
+        populate_by_name = True
 
 class ScheduleUpdate(BaseModel):
     course_id: Optional[str] = Field(None, alias="courseId")

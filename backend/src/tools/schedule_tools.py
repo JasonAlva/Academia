@@ -1,5 +1,6 @@
 from langchain_core.tools import tool
 from src.services.schedule_service import ScheduleService
+from src.services.teacher_service import TeacherService
 from src.models.schemas import (
     ScheduleCreate,
     ScheduleUpdate,
@@ -142,9 +143,65 @@ async def get_teacher_schedule(teacher_id: str):
     Args:
         teacher_id: The unique identifier of the teacher
     """
+    teacher_service=TeacherService(prisma)
+    teacher=await teacher_service.get_teacher_by_teacher_id(teacher_id)
     service = ScheduleService(prisma)
-    schedules = await service.get_teacher_schedule(teacher_id)
+    schedules = await service.get_teacher_schedule(teacher.id)
     return [schedule.model_dump() for schedule in schedules]
+
+
+@tool
+async def get_teacher_timetable_grid(teacher_id: str):
+    """
+    Get teacher's timetable in grid format.
+    Returns a 2D structure: [day][period] = [teacher, subject, room] or None
+    Structure: 5 days (Mon-Fri), 8 periods per day.
+    
+    Args:
+        teacher_id: The unique identifier of the teacher. (required)
+    
+    Use this when user asks for a teacher's timetable in grid/table format.
+    """
+    service = ScheduleService(prisma)
+    try:
+        timetable = await service.get_teacher_timetable_grid(teacher_id)
+        return {
+            "success": True,
+            "timetable": timetable,
+            "structure": {
+                "days": 5,
+                "periods": 8
+            }
+        }
+    except Exception as e:
+        return {"error": f"Failed to get teacher timetable: {str(e)}"}
+
+
+@tool
+async def get_student_timetable_grid(student_id: str):
+    """
+    Get student's timetable in grid format.
+    Returns a 2D structure: [day][period] = [teacher, subject, room] or None
+    Structure: 5 days (Mon-Fri), 8 periods per day.
+    
+    Args:
+        student_id: The unique identifier of the student. (required)
+    
+    Use this when user asks for a student's timetable in grid/table format.
+    """
+    service = ScheduleService(prisma)
+    try:
+        timetable = await service.get_student_timetable_grid(student_id)
+        return {
+            "success": True,
+            "timetable": timetable,
+            "structure": {
+                "days": 5,
+                "periods": 8
+            }
+        }
+    except Exception as e:
+        return {"error": f"Failed to get student timetable: {str(e)}"}
 
 
 @tool
@@ -207,17 +264,17 @@ async def create_new_schedule(
         
         print(f"[SCHEDULE_TOOL] Found course: {course.courseName}, teacher: {teacher.id}")
         
-        # Create schedule
+        # Create schedule using correct field names from schema
         schedule_data = ScheduleCreate(
-            courseId=course.id,
-            teacherId=teacher.id,
-            dayOfWeek=day_of_week.upper(),
-            startTime=start_time,
-            endTime=end_time,
+            course_id=course.id,      # Python field name is course_id
+            teacherId=teacher.id,      # Python field name is teacherId
+            day_of_week=day_of_week.upper(),
+            start_time=start_time,
+            end_time=end_time,
             room=room,
             building=building,
             type=type,
-            isActive=is_active
+            is_active=is_active
         )
         
         new_schedule = await service.create_schedule(schedule_data)
@@ -373,23 +430,25 @@ async def delete_existing_schedule(
 
 
 @tool
-async def get_full_timetable():
+async def get_full_timetable(department_id: Optional[str] = None):
     """
-    Get the complete timetable for all semesters and sections.
-    Returns a 4D structure: [semester][section][day][period] = [teacher, subject, room] or None
-    Structure: 4 semesters, 2 sections each, 5 days (Mon-Fri), 9 periods per day.
+    Get the complete timetable for all semesters, optionally filtered by department.
+    Returns a 3D structure: [semester][day][period] = [teacher, subject, room] or None
+    Structure: 8 semesters, 5 days (Mon-Fri), 8 periods per day.
+    
+    Args:
+        department_id: Optional department ID to filter schedules by department. (optional)
     
     Use this when user asks for the full timetable, complete schedule, or entire timetable view.
     """
     service = ScheduleService(prisma)
     try:
-        timetable = await service.get_full_timetable()
+        timetable = await service.get_full_timetable(department_id=department_id)
         return {
             "success": True,
             "timetable": timetable,
             "structure": {
-                "semesters": 4,
-                "sections_per_semester": 2,
+                "semesters": 8,
                 "days": 5,
                 "periods": 8
             }
@@ -419,16 +478,17 @@ async def get_subjects_details():
 
 
 @tool
-async def save_timetable(semester: int, section: int, timetable_json: str):
+async def save_timetable(semester: int, timetable_json: str, section: int = 1, department_id: Optional[str] = None):
     """
-    Save timetable for a specific semester and section.
+    Save timetable for a specific semester.
     
     Args:
         semester: Semester number (1-8). (required)
-        section: Section number (0 or 1). (required)
-        timetable_json: JSON string representing the timetable as a 2D array where each cell is [teacher, subject, room] or null. Example: '[[null, ["T1", "CS101", "R1"], null], [null, null, ["T2", "CS102", "R2"]]]' (required)
+        timetable_json: JSON string representing the timetable as a 2D array [day][period] where each cell is [teacher, subject, room] or null. Example: '[[null, ["T1", "CS101", "R1"], null], [null, null, ["T2", "CS102", "R2"]]]' (required)
+        section: Section number (default: 1). (optional)
+        department_id: Optional department ID to associate schedules with. (optional)
     
-    Use this when user wants to save or update a timetable for a specific semester/section.
+    Use this when user wants to save or update a timetable for a specific semester.
     """
     import json
     service = ScheduleService(prisma)
@@ -439,7 +499,8 @@ async def save_timetable(semester: int, section: int, timetable_json: str):
         success = await service.save_timetable(
             semester=semester,
             section=section,
-            timetable=timetable
+            timetable=timetable,
+            department_id=department_id
         )
         if success:
             return {

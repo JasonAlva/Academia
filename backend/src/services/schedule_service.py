@@ -34,7 +34,7 @@ class ScheduleService:
         schedule = await self.db.schedule.create(
             data={
                 'course': {'connect': {'id': schedule_data.course_id}},
-                'teacher': {'connect': {'id': schedule_data.teacher_id}},
+                'teacher': {'connect': {'id': schedule_data.teacherId}},
                 'dayOfWeek': schedule_data.day_of_week,
                 'startTime': schedule_data.start_time,
                 'endTime': schedule_data.end_time,

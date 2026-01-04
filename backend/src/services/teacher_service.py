@@ -24,6 +24,12 @@ class TeacherService:
             include={"user": True}
         )
         return teacher
+    async def get_teacher_by_teacher_id(self, teacher_id: str) -> Optional[Teacher]:
+        teacher = await self.db.teacher.find_unique(
+            where={"teacherId": teacher_id},
+            include={"user": True}
+        )
+        return teacher
 
     async def update_teacher(self, teacher_id: str, teacher_data: TeacherUpdate) -> Optional[Teacher]:
         teacher = await self.db.teacher.update(
