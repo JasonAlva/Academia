@@ -445,6 +445,21 @@ class CourseOut(BaseModel):
     class Config:
         from_attributes = True
 
+class EnrollmentOut(BaseModel):
+    """Enrollment with nested student and course details"""
+    id: str
+    studentId: str
+    courseId: str
+    status: Optional[str] = None
+    grade: Optional[str] = None
+    gradePoints: Optional[float] = None
+    enrolledAt: datetime
+    student: Optional[StudentOut] = None
+    course: Optional[CourseOut] = None
+    
+    class Config:
+        from_attributes = True
+
 class StudentAttendanceRead(BaseModel):
     id: str
     sessionId: str

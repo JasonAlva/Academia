@@ -1,15 +1,15 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
-from src.models.schemas import EnrollmentCreate, EnrollmentUpdate, EnrollmentResponse
+from src.models.schemas import EnrollmentCreate, EnrollmentUpdate, EnrollmentResponse, EnrollmentOut
 from src.services.enrollment_service import EnrollmentService
 from src.api.dependencies import get_current_user
 from src.config.database import prisma
 
 router = APIRouter()
 
-@router.get("/", response_model=List[EnrollmentResponse])
+@router.get("/", response_model=List[EnrollmentOut])
 async def get_all_enrollments(skip: int = 0, limit: int = 100, current_user: str = Depends(get_current_user)):
-    """Get all enrollments with pagination"""
+    """Get all enrollments with student and course details"""
     enrollment_service = EnrollmentService(prisma)
     try:
         enrollments = await enrollment_service.list_enrollments_with_details(skip, limit)

@@ -13,33 +13,126 @@ from typing import Optional
 
 @tool
 async def list_all_schedules(
-    course_id: Optional[str] = None,
+    course_code: Optional[str] = None,
     teacher_id: Optional[str] = None
 ):
-    """Get all schedules from the database. Can optionally filter by course_id or teacher_id.
+    """Get all schedules from the database. Can optionally filter by course code or teacher ID.
     Use this when user asks to see all schedules, list schedules, or show class schedules.
     
     Args:
-        course_id: Optional course ID to filter schedules by specific course
-        teacher_id: Optional teacher ID to filter schedules by specific teacher
+        course_code: Optional course code (e.g., 'CS101', 'MATH201') to filter schedules
+        teacher_id: Optional teacherId (e.g., 'T001', 'T002') to filter schedules
     """
+    print(f"[SCHEDULE_TOOL] Listing schedules: course_code={course_code}, teacher_id={teacher_id}")
     service = ScheduleService(prisma)
-    schedules = await service.get_schedules(course_id=course_id, teacher_id=teacher_id)
+    
+    # Resolve course code to course ID if provided
+    resolved_course_id = None
+    if course_code:
+        print(f"[SCHEDULE_TOOL] Looking up course by code: {course_code}")
+        course = await prisma.course.find_first(
+            where={"courseCode": {"equals": course_code, "mode": "insensitive"}}
+        )
+        if course:
+            resolved_course_id = course.id
+            print(f"[SCHEDULE_TOOL] Found course: {course.courseName} (ID: {course.id})")
+        else:
+            print(f"[SCHEDULE_TOOL] Course not found with code: {course_code}")
+            return {"error": f"Course not found with code: {course_code}"}
+    
+    # Resolve teacherId to internal ID if provided
+    resolved_teacher_id = None
+    if teacher_id:
+        print(f"[SCHEDULE_TOOL] Looking up teacher by teacherId: {teacher_id}")
+        teacher = await prisma.teacher.find_first(
+            where={"teacherId": {"equals": teacher_id, "mode": "insensitive"}}
+        )
+        if teacher:
+            resolved_teacher_id = teacher.id
+            print(f"[SCHEDULE_TOOL] Found teacher (ID: {teacher.id})")
+        else:
+            print(f"[SCHEDULE_TOOL] Teacher not found with teacherId: {teacher_id}")
+            return {"error": f"Teacher not found with teacherId: {teacher_id}"}
+    
+    schedules = await service.get_schedules(course_id=resolved_course_id, teacher_id=resolved_teacher_id)
+    print(f"[SCHEDULE_TOOL] Found {len(schedules)} schedules")
     return [schedule.model_dump() for schedule in schedules]
 
 
 @tool
-async def get_schedule_by_id(schedule_id: str):
-    """Get a specific schedule by its ID.
+async def get_schedule_by_details(
+    course_code: str,
+    teacher_id: str,
+    day_of_week: str,
+    start_time: str
+):
+    """Get a specific schedule by course code, teacher ID, day of week, and start time.
+    This is more user-friendly than requiring the internal schedule ID.
     
     Args:
-        schedule_id: The unique identifier of the schedule
+        course_code: The course code (e.g., 'CS101', 'MATH201')
+        teacher_id: The teacherId (e.g., 'T001', 'T002')
+        day_of_week: Day of the week (e.g., 'MONDAY', 'TUESDAY', etc.)
+        start_time: Start time of the class (e.g., '09:00', '10:00')
     """
-    service = ScheduleService(prisma)
-    schedule = await service.get_schedule(schedule_id)
-    if not schedule:
-        return {"error": "Schedule not found"}
-    return schedule.model_dump()
+    print(f"[SCHEDULE_TOOL] Finding schedule: {course_code}, {teacher_id}, {day_of_week}, {start_time}")
+    
+    try:
+        # Find course by code
+        course = await prisma.course.find_first(
+            where={"courseCode": {"equals": course_code, "mode": "insensitive"}}
+        )
+        if not course:
+            print(f"[SCHEDULE_TOOL] Course not found: {course_code}")
+            return {"error": f"Course not found with code: {course_code}"}
+        
+        # Find teacher by teacherId
+        teacher = await prisma.teacher.find_first(
+            where={"teacherId": {"equals": teacher_id, "mode": "insensitive"}}
+        )
+        if not teacher:
+            print(f"[SCHEDULE_TOOL] Teacher not found: {teacher_id}")
+            return {"error": f"Teacher not found with teacherId: {teacher_id}"}
+        
+        print(f"[SCHEDULE_TOOL] Found course: {course.courseName}, teacher ID: {teacher.id}")
+        
+        # Find schedule with these parameters
+        schedule = await prisma.schedule.find_first(
+            where={
+                "courseId": course.id,
+                "teacherId": teacher.id,
+                "dayOfWeek": {"equals": day_of_week.upper()},
+                "startTime": start_time
+            },
+            include={
+                "course": True,
+                "teacher": {"include": {"user": True}}
+            }
+        )
+        
+        if not schedule:
+            print(f"[SCHEDULE_TOOL] Schedule not found with provided details")
+            return {"error": "Schedule not found with provided details"}
+        
+        print(f"[SCHEDULE_TOOL] Found schedule: {schedule.id}")
+        return {
+            "id": schedule.id,
+            "courseId": schedule.courseId,
+            "courseCode": course.courseCode,
+            "courseName": course.courseName,
+            "teacherId": schedule.teacherId,
+            "teacherName": teacher.user.name if teacher.user else None,
+            "dayOfWeek": schedule.dayOfWeek,
+            "startTime": schedule.startTime,
+            "endTime": schedule.endTime,
+            "room": schedule.room,
+            "building": schedule.building,
+            "type": schedule.type,
+            "isActive": schedule.isActive
+        }
+    except Exception as e:
+        print(f"[SCHEDULE_TOOL] Error finding schedule: {str(e)}")
+        return {"error": f"Failed to find schedule: {str(e)}"}
 
 
 @tool
@@ -67,72 +160,215 @@ async def get_course_schedule(course_id: str):
 
 
 @tool
-async def create_new_schedule(schedule: ScheduleCreate):
+async def create_new_schedule(
+    course_code: str,
+    teacher_id: str,
+    day_of_week: str,
+    start_time: str,
+    end_time: str,
+    room: str,
+    building: str = None,
+    type: str = "LECTURE",
+    is_active: bool = True
+):
     """
     Create a new schedule entry in the database.
 
     Args:
-        schedule (ScheduleCreate): An object containing all information required to create a new schedule. The fields are:
-
-            course_id (str): ID of the course. (required)
-            teacherId (str): ID of the teacher. (required)
-            day_of_week (str): Day of the week (MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY). (required)
-            start_time (str): Start time of the class (e.g., "09:00 AM"). (required)
-            end_time (str): End time of the class (e.g., "10:00 AM"). (required)
-            room (str): Room number or code. (required)
-            
-            building (Optional[str]): Building name or code. (optional)
-            type (str): Type of class (LECTURE, LAB, TUTORIAL). (optional, default="LECTURE")
-            is_active (bool): Whether the schedule is currently active. (optional, default=True)
+        course_code (str): Course code (e.g., 'CS101', 'MATH201'). (required)
+        teacher_id (str): Teacher ID (e.g., 'T001', 'T002'). (required)
+        day_of_week (str): Day of the week (MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY). (required)
+        start_time (str): Start time (e.g., '09:00', '10:00'). (required)
+        end_time (str): End time (e.g., '10:00', '11:00'). (required)
+        room (str): Room number or code (e.g., 'R101', 'LAB-1'). (required)
+        building (str): Building name or code. (optional)
+        type (str): Type of class (LECTURE, LAB, TUTORIAL). (optional, default='LECTURE')
+        is_active (bool): Whether the schedule is active. (optional, default=True)
     """
+    print(f"[SCHEDULE_TOOL] Creating schedule: {course_code}, {teacher_id}, {day_of_week}")
     service = ScheduleService(prisma)
+    
     try:
-        new_schedule = await service.create_schedule(schedule)
+        # Find course by code
+        course = await prisma.course.find_first(
+            where={"courseCode": {"equals": course_code, "mode": "insensitive"}}
+        )
+        if not course:
+            print(f"[SCHEDULE_TOOL] Course not found: {course_code}")
+            return {"error": f"Course not found with code: {course_code}"}
+        
+        # Find teacher by teacherId
+        teacher = await prisma.teacher.find_first(
+            where={"teacherId": {"equals": teacher_id, "mode": "insensitive"}}
+        )
+        if not teacher:
+            print(f"[SCHEDULE_TOOL] Teacher not found: {teacher_id}")
+            return {"error": f"Teacher not found with teacherId: {teacher_id}"}
+        
+        print(f"[SCHEDULE_TOOL] Found course: {course.courseName}, teacher: {teacher.id}")
+        
+        # Create schedule
+        schedule_data = ScheduleCreate(
+            courseId=course.id,
+            teacherId=teacher.id,
+            dayOfWeek=day_of_week.upper(),
+            startTime=start_time,
+            endTime=end_time,
+            room=room,
+            building=building,
+            type=type,
+            isActive=is_active
+        )
+        
+        new_schedule = await service.create_schedule(schedule_data)
+        print(f"[SCHEDULE_TOOL] Schedule created successfully: {new_schedule.id}")
         return new_schedule.model_dump()
     except Exception as e:
+        print(f"[SCHEDULE_TOOL] Failed to create schedule: {str(e)}")
         return {"error": f"Failed to create schedule: {str(e)}"}
 
 
 @tool
-async def update_existing_schedule(schedule_id: str, schedule: ScheduleUpdate):
-    """Update an existing schedule's information.
+async def update_existing_schedule(
+    course_code: str,
+    teacher_id: str,
+    day_of_week: str,
+    start_time: str,
+    new_end_time: str = None,
+    new_room: str = None,
+    new_building: str = None,
+    new_type: str = None,
+    is_active: bool = None
+):
+    """Update an existing schedule's information by finding it using course code, teacher ID, day, and time.
     
     Args:
-        schedule_id (str): The unique ID of the schedule to update. (required)
-        schedule (ScheduleUpdate): An object containing the fields to update. All fields are optional:
-            - course_id (Optional[str]): Updated course ID. (optional)
-            - teacherId (Optional[str]): Updated teacher ID. (optional)
-            - day_of_week (Optional[str]): Updated day of the week. (optional)
-            - start_time (Optional[str]): Updated start time. (optional)
-            - end_time (Optional[str]): Updated end time. (optional)
-            - room (Optional[str]): Updated room number. (optional)
-            - building (Optional[str]): Updated building name. (optional)
-            - type (Optional[str]): Updated class type. (optional)
-            - is_active (Optional[bool]): Updated active status. (optional)
+        course_code (str): Course code to find the schedule (e.g., 'CS101'). (required)
+        teacher_id (str): Teacher ID to find the schedule (e.g., 'T001'). (required)
+        day_of_week (str): Day of week to find the schedule (e.g., 'MONDAY'). (required)
+        start_time (str): Start time to find the schedule (e.g., '09:00'). (required)
+        new_end_time (str): Updated end time. (optional)
+        new_room (str): Updated room number. (optional)
+        new_building (str): Updated building name. (optional)
+        new_type (str): Updated class type (LECTURE, LAB, TUTORIAL). (optional)
+        is_active (bool): Updated active status. (optional)
     """
+    print(f"[SCHEDULE_TOOL] Updating schedule: {course_code}, {teacher_id}, {day_of_week}, {start_time}")
     service = ScheduleService(prisma)
+    
     try:
-        updated_schedule = await service.update_schedule(schedule_id, schedule)
+        # Find the schedule first
+        course = await prisma.course.find_first(
+            where={"courseCode": {"equals": course_code, "mode": "insensitive"}}
+        )
+        if not course:
+            print(f"[SCHEDULE_TOOL] Course not found: {course_code}")
+            return {"error": f"Course not found with code: {course_code}"}
+        
+        teacher = await prisma.teacher.find_first(
+            where={"teacherId": {"equals": teacher_id, "mode": "insensitive"}}
+        )
+        if not teacher:
+            print(f"[SCHEDULE_TOOL] Teacher not found: {teacher_id}")
+            return {"error": f"Teacher not found with teacherId: {teacher_id}"}
+        
+        # Find the schedule
+        schedule = await prisma.schedule.find_first(
+            where={
+                "courseId": course.id,
+                "teacherId": teacher.id,
+                "dayOfWeek": {"equals": day_of_week.upper()},
+                "startTime": start_time
+            }
+        )
+        
+        if not schedule:
+            print(f"[SCHEDULE_TOOL] Schedule not found")
+            return {"error": "Schedule not found with provided details"}
+        
+        print(f"[SCHEDULE_TOOL] Found schedule to update: {schedule.id}")
+        
+        # Build update data
+        schedule_update = ScheduleUpdate(
+            endTime=new_end_time,
+            room=new_room,
+            building=new_building,
+            type=new_type,
+            isActive=is_active
+        )
+        
+        updated_schedule = await service.update_schedule(schedule.id, schedule_update)
+        print(f"[SCHEDULE_TOOL] Schedule updated successfully")
         return updated_schedule.model_dump()
     except Exception as e:
+        print(f"[SCHEDULE_TOOL] Update failed: {str(e)}")
         return {"error": f"Schedule not found or could not be updated: {str(e)}"}
 
 
 @tool
-async def delete_existing_schedule(schedule_id: str):
+async def delete_existing_schedule(
+    course_code: str,
+    teacher_id: str,
+    day_of_week: str,
+    start_time: str
+):
     """
-    Delete a schedule from the database.
+    Delete a schedule from the database by finding it using course code, teacher ID, day, and time.
 
     Args:
-        schedule_id (str): The unique ID of the schedule to delete. (required)
+        course_code (str): Course code (e.g., 'CS101'). (required)
+        teacher_id (str): Teacher ID (e.g., 'T001'). (required)
+        day_of_week (str): Day of week (e.g., 'MONDAY'). (required)
+        start_time (str): Start time (e.g., '09:00'). (required)
     """
+    print(f"[SCHEDULE_TOOL] Deleting schedule: {course_code}, {teacher_id}, {day_of_week}, {start_time}")
     service = ScheduleService(prisma)
+    
     try:
-        deleted = await service.delete_schedule(schedule_id)
+        # Find the schedule first
+        course = await prisma.course.find_first(
+            where={"courseCode": {"equals": course_code, "mode": "insensitive"}}
+        )
+        if not course:
+            print(f"[SCHEDULE_TOOL] Course not found: {course_code}")
+            return {"error": f"Course not found with code: {course_code}"}
+        
+        teacher = await prisma.teacher.find_first(
+            where={"teacherId": {"equals": teacher_id, "mode": "insensitive"}}
+        )
+        if not teacher:
+            print(f"[SCHEDULE_TOOL] Teacher not found: {teacher_id}")
+            return {"error": f"Teacher not found with teacherId: {teacher_id}"}
+        
+        # Find the schedule
+        schedule = await prisma.schedule.find_first(
+            where={
+                "courseId": course.id,
+                "teacherId": teacher.id,
+                "dayOfWeek": {"equals": day_of_week.upper()},
+                "startTime": start_time
+            }
+        )
+        
+        if not schedule:
+            print(f"[SCHEDULE_TOOL] Schedule not found")
+            return {"error": "Schedule not found with provided details"}
+        
+        print(f"[SCHEDULE_TOOL] Found schedule to delete: {schedule.id}")
+        
+        deleted = await service.delete_schedule(schedule.id)
         if deleted:
-            return {"message": "Schedule deleted successfully", "schedule_id": schedule_id}
+            print(f"[SCHEDULE_TOOL] Schedule deleted successfully")
+            return {
+                "message": "Schedule deleted successfully",
+                "course_code": course_code,
+                "teacher_id": teacher_id,
+                "day_of_week": day_of_week,
+                "start_time": start_time
+            }
         return {"error": "Schedule not found"}
     except Exception as e:
+        print(f"[SCHEDULE_TOOL] Delete failed: {str(e)}")
         return {"error": f"Schedule not found or could not be deleted: {str(e)}"}
 
 
@@ -155,7 +391,7 @@ async def get_full_timetable():
                 "semesters": 4,
                 "sections_per_semester": 2,
                 "days": 5,
-                "periods": 9
+                "periods": 8
             }
         }
     except Exception as e:
@@ -217,21 +453,3 @@ async def save_timetable(semester: int, section: int, timetable_json: str):
         return {"error": f"Failed to save timetable: {str(e)}"}
 
 
-@tool
-async def generate_timetable():
-    """
-    Generate a timetable automatically using AI/algorithm.
-    This creates a complete timetable structure for all semesters and sections.
-    
-    Use this when user asks to generate a new timetable, create automatic schedule, or build timetable from scratch.
-    """
-    service = ScheduleService(prisma)
-    try:
-        timetable = await service.generate_timetable()
-        return {
-            "success": True,
-            "message": "Timetable generated successfully",
-            "timetable": timetable
-        }
-    except Exception as e:
-        return {"error": f"Failed to generate timetable: {str(e)}"}

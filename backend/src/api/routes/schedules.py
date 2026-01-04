@@ -28,8 +28,18 @@ async def get_teacher_timetable(
     current_user: str = Depends(get_current_user)
 ):
     """Get teacher's timetable in grid format"""
+    print(f"\n🔍 TEACHER TIMETABLE REQUEST: teacher_id={teacher_id}")
     schedule_service = ScheduleService(prisma)
-    return await schedule_service.get_teacher_timetable_grid(teacher_id)
+    result = await schedule_service.get_teacher_timetable_grid(teacher_id)
+    print(f"📊 Result type: {type(result)}")
+    if isinstance(result, list):
+        print(f"📊 Result length (days): {len(result)}")
+        if len(result) > 0:
+            print(f"📊 First day type: {type(result[0])}")
+            if isinstance(result[0], list):
+                print(f"📊 First day length (periods): {len(result[0])}")
+    print(f"📊 Full result: {result}\n")
+    return result
 
 @router.get("/student/{student_id}/timetable")
 async def get_student_timetable(
@@ -52,28 +62,44 @@ async def save_timetable(
     current_user: str = Depends(get_current_user)
 ):
     """Save timetable for a specific semester and section"""
+    import json
+    
+    # Parse the JSON string to a Python object
+    try:
+        timetable_data = json.loads(request.timetable)
+    except json.JSONDecodeError as e:
+        print(f"❌ ERROR: Invalid JSON in timetable: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid timetable JSON: {str(e)}")
+    
     print(f"\n{'='*60}")
     print(f"SAVE TIMETABLE REQUEST")
     print(f"{'='*60}")
     print(f"Semester: {request.semester}")
     print(f"Section: {request.section}")
     print(f"Department ID: {request.departmentId}")
-    print(f"Timetable has {len(request.timetable)} days")
-    for day_idx, day in enumerate(request.timetable):
-        if day:
-            non_null_periods = [i for i, p in enumerate(day) if p is not None]
-            if non_null_periods:
-                print(f"  Day {day_idx}: Periods with classes: {non_null_periods}")
-                for period_idx in non_null_periods:
-                    print(f"    Period {period_idx}: {day[period_idx]}")
+    print(f"Timetable type: {type(timetable_data)}")
+    print(f"Timetable data: {timetable_data}")
+    
+    # Only iterate if timetable_data is a list/dict
+    if isinstance(timetable_data, (list, dict)):
+        if isinstance(timetable_data, list):
+            print(f"Timetable has {len(timetable_data)} days")
+            for day_idx, day in enumerate(timetable_data):
+                if day and isinstance(day, list):
+                    non_null_periods = [i for i, p in enumerate(day) if p is not None]
+                    if non_null_periods:
+                        print(f"  Day {day_idx}: Periods with classes: {non_null_periods}")
+                        for period_idx in non_null_periods:
+                            print(f"    Period {period_idx}: {day[period_idx]}")
     print(f"{'='*60}\n")
     
     schedule_service = ScheduleService(prisma)
     try:
+        # Pass the parsed timetable data to the service
         await schedule_service.save_timetable(
             request.semester, 
             request.section, 
-            request.timetable,
+            timetable_data,
             request.departmentId
         )
         return {"detail": "Timetable saved successfully"}

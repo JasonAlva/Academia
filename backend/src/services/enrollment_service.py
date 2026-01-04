@@ -1,6 +1,6 @@
 from typing import List, Optional
 from prisma import Prisma
-from src.models.schemas import EnrollmentCreate, EnrollmentUpdate, EnrollmentResponse
+from src.models.schemas import EnrollmentCreate, EnrollmentUpdate, EnrollmentResponse, EnrollmentOut
 
 
 class EnrollmentService:
@@ -38,7 +38,7 @@ class EnrollmentService:
         enrollments = await self.db.enrollment.find_many(where=where)
         return [EnrollmentResponse.model_validate(e) for e in enrollments]
     
-    async def list_enrollments_with_details(self, skip: int = 0, limit: int = 100):
+    async def list_enrollments_with_details(self, skip: int = 0, limit: int = 100) -> List[EnrollmentOut]:
         """Get all enrollments with student and course details"""
         enrollments = await self.db.enrollment.find_many(
             skip=skip,
@@ -62,13 +62,18 @@ class EnrollmentService:
             },
             order={'enrolledAt': 'desc'}
         )
-        return enrollments
+        return [EnrollmentOut.model_validate(e) for e in enrollments]
 
-    async def get_student_enrollments_with_courses(self, student_id: str):
+    async def get_student_enrollments_with_courses(self, student_id: str) -> List[EnrollmentOut]:
         """Get all enrollments for a student with full course and teacher details"""
         enrollments = await self.db.enrollment.find_many(
             where={'studentId': student_id, 'status': 'ACTIVE'},
             include={
+                'student': {
+                    'include': {
+                        'user': True
+                    }
+                },
                 'course': {
                     'include': {
                         'teacher': {
@@ -82,4 +87,4 @@ class EnrollmentService:
             },
             order={'enrolledAt': 'desc'}
         )
-        return enrollments
+        return [EnrollmentOut.model_validate(e) for e in enrollments]

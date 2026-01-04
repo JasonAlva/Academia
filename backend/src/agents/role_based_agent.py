@@ -59,7 +59,7 @@ from src.tools.enrollment_tool import (
 )
 from src.tools.schedule_tools import (
     list_all_schedules,
-    get_schedule_by_id,
+    get_schedule_by_details,
     get_teacher_schedule,
     get_course_schedule,
     create_new_schedule,
@@ -67,9 +67,9 @@ from src.tools.schedule_tools import (
     delete_existing_schedule,
     get_full_timetable,
     get_subjects_details,
-    save_timetable,
-    generate_timetable
-)
+    save_timetable
+    )
+
 from src.tools.attendance_tool import (
     create_class_session,
     get_class_session,
@@ -143,7 +143,7 @@ ROLE_TOOLS: Dict[str, List[Any]] = {
         
         # Schedule management
         list_all_schedules,
-        get_schedule_by_id,
+        get_schedule_by_details,
         get_teacher_schedule,
         get_course_schedule,
         create_new_schedule,
@@ -152,7 +152,6 @@ ROLE_TOOLS: Dict[str, List[Any]] = {
         get_full_timetable,
         get_subjects_details,
         save_timetable,
-        generate_timetable,
         
         # Attendance management
         create_class_session,
@@ -210,7 +209,7 @@ ROLE_TOOLS: Dict[str, List[Any]] = {
         
         # View and manage own schedule
         list_all_schedules,
-        get_schedule_by_id,
+        get_schedule_by_details,
         get_teacher_schedule,
         get_course_schedule,
         get_full_timetable,
@@ -257,7 +256,7 @@ ROLE_TOOLS: Dict[str, List[Any]] = {
         
         # View schedules and timetable
         list_all_schedules,
-        get_schedule_by_id,
+        get_schedule_by_details,
         get_course_schedule,
         get_full_timetable,
         get_subjects_details,

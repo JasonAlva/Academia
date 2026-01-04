@@ -7,18 +7,38 @@ from src.models.schemas import (
 )
 from src.config.database import prisma
 from typing import Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @tool
 async def list_all_enrollments(student_id: Optional[str] = None):
-    """Get all enrollments from the database. Can optionally filter by student_id.
+    """Get all enrollments from the database. Can optionally filter by studentId.
     Use this when user asks to see all enrollments, list enrollments, or show student enrollments.
     
     Args:
-        student_id: Optional student ID to filter enrollments by specific student
+        student_id: Optional studentId (e.g., 'CS001', 'MATH123') to filter enrollments by specific student
     """
+    logger.info(f"[ENROLLMENT_TOOL] Listing enrollments, filter by studentId: {student_id}")
     service = EnrollmentService(prisma)
-    enrollments = await service.list_enrollments(student_id=student_id)
+    
+    # If student_id provided, try to find student by studentId first
+    filter_by_id = None
+    if student_id:
+        student = await prisma.student.find_first(
+            where={"studentId": {"equals": student_id, "mode": "insensitive"}}
+        )
+        if student:
+            filter_by_id = student.id
+            logger.info(f"[ENROLLMENT_TOOL] Found student with studentId: {student_id}")
+        else:
+            # Fallback to treating it as internal id
+            logger.info(f"[ENROLLMENT_TOOL] Treating as internal id: {student_id}")
+            filter_by_id = student_id
+    
+    enrollments = await service.list_enrollments(student_id=filter_by_id)
+    logger.info(f"[ENROLLMENT_TOOL] Found {len(enrollments)} enrollments")
     return [enrollment.model_dump() for enrollment in enrollments]
 
 
@@ -42,13 +62,34 @@ async def get_student_enrollments_with_details(student_id: str):
     This includes course information, teacher details, and department information.
     
     Args:
-        student_id: The unique identifier of the student
+        student_id: The studentId of the student (e.g., 'CS001', 'MATH123')
     """
+    logger.info(f"[ENROLLMENT_TOOL] Getting enrollments with details for studentId: {student_id}")
     service = EnrollmentService(prisma)
+    
     try:
-        enrollments = await service.get_student_enrollments_with_courses(student_id)
+        # Find student by studentId
+        student = await prisma.student.find_first(
+            where={"studentId": {"equals": student_id, "mode": "insensitive"}}
+        )
+        
+        # Fallback to internal id
+        if not student:
+            logger.info(f"[ENROLLMENT_TOOL] Not found by studentId, trying internal id: {student_id}")
+            student = await prisma.student.find_unique(where={"id": student_id})
+        
+        if not student:
+            logger.warning(f"[ENROLLMENT_TOOL] Student not found: {student_id}")
+            return {"error": f"Student not found: {student_id}"}
+        
+        logger.info(f"[ENROLLMENT_TOOL] Found student: {student.studentId}")
+        
+        enrollments = await service.get_student_enrollments_with_courses(student.id)
         if not enrollments:
+            logger.info(f"[ENROLLMENT_TOOL] No active enrollments found for student: {student.studentId}")
             return {"message": "No active enrollments found for this student", "enrollments": []}
+        
+        logger.info(f"[ENROLLMENT_TOOL] Found {len(enrollments)} enrollments")
         
         # Format the response with nested details
         result = []
@@ -91,46 +132,108 @@ async def get_student_enrollments_with_details(student_id: str):
         
         return {"enrollments": result, "count": len(result)}
     except Exception as e:
+        logger.error(f"[ENROLLMENT_TOOL] Failed to get enrollments: {str(e)}")
         return {"error": f"Failed to get student enrollments: {str(e)}"}
 
 
 @tool
-async def create_new_enrollment(enrollment: EnrollmentCreate):
+async def create_new_enrollment(
+    student_id: str,
+    course_code: str = None,
+    course_id: str = None
+):
     """
     Create a new enrollment entry in the database.
     This enrolls a student in a specific course.
 
     Args:
-        enrollment (EnrollmentCreate): An object containing all information required to create a new enrollment. The fields are:
-
-            student_id (str): ID of the student to enroll. (required)
-            course_id (str): ID of the course to enroll in. (required)
+        student_id (str): The studentId of the student to enroll (e.g., 'CS001', 'MATH123'). (required)
+        course_code (str): The course code to enroll in (e.g., 'CS101', 'MATH201'). Preferred over course_id. (optional)
+        course_id (str): The internal course ID (use if course_code not available). (optional)
+    
+    Note: Provide either course_code (preferred) or course_id.
     """
+    logger.info(f"[ENROLLMENT_TOOL] Creating enrollment for studentId: {student_id}, courseCode: {course_code}")
     service = EnrollmentService(prisma)
+    
     try:
-        new_enrollment = await service.create_enrollment(enrollment)
+        # Find student by studentId
+        student = await prisma.student.find_first(
+            where={"studentId": {"equals": student_id, "mode": "insensitive"}}
+        )
+        
+        # Fallback to internal id
+        if not student:
+            logger.info(f"[ENROLLMENT_TOOL] Not found by studentId, trying internal id: {student_id}")
+            student = await prisma.student.find_unique(where={"id": student_id})
+        
+        if not student:
+            logger.error(f"[ENROLLMENT_TOOL] Student not found: {student_id}")
+            return {"error": f"Student not found: {student_id}"}
+        
+        logger.info(f"[ENROLLMENT_TOOL] Found student: {student.studentId}")
+        
+        # Find course by code if provided
+        resolved_course_id = course_id
+        if course_code:
+            logger.info(f"[ENROLLMENT_TOOL] Looking up course by code: {course_code}")
+            course = await prisma.course.find_first(
+                where={"courseCode": {"equals": course_code, "mode": "insensitive"}}
+            )
+            if not course:
+                logger.error(f"[ENROLLMENT_TOOL] Course not found with code: {course_code}")
+                return {"error": f"Course not found with code: {course_code}"}
+            resolved_course_id = course.id
+            logger.info(f"[ENROLLMENT_TOOL] Found course: {course.courseName} ({course.courseCode})")
+        elif not course_id:
+            logger.error("[ENROLLMENT_TOOL] Neither course_code nor course_id provided")
+            return {"error": "Please provide either course_code or course_id"}
+        
+        # Create enrollment
+        enrollment_data = EnrollmentCreate(
+            studentId=student.id,
+            courseId=resolved_course_id
+        )
+        
+        new_enrollment = await service.create_enrollment(enrollment_data)
+        logger.info(f"[ENROLLMENT_TOOL] Enrollment created successfully: {new_enrollment.id}")
         return new_enrollment.model_dump()
     except Exception as e:
+        logger.error(f"[ENROLLMENT_TOOL] Failed to create enrollment: {str(e)}")
         return {"error": f"Failed to create enrollment: {str(e)}"}
 
 
 @tool
-async def update_existing_enrollment(enrollment_id: str, enrollment: EnrollmentUpdate):
+async def update_existing_enrollment(
+    enrollment_id: str,
+    status: str = None,
+    grade: str = None,
+    grade_points: float = None
+):
     """Update an existing enrollment's information.
     This can be used to update enrollment status, grades, or grade points.
     
     Args:
         enrollment_id (str): The unique ID of the enrollment to update. (required)
-        enrollment (EnrollmentUpdate): An object containing the fields to update. All fields are optional:
-            - status (Optional[str]): Updated enrollment status (e.g., "ACTIVE", "COMPLETED", "DROPPED"). (optional)
-            - grade (Optional[str]): Updated grade (e.g., "A", "B+", "C"). (optional)
-            - grade_points (Optional[float]): Updated grade points (e.g., 4.0, 3.5). (optional)
+        status (str): Updated enrollment status (e.g., "ACTIVE", "COMPLETED", "DROPPED"). (optional)
+        grade (str): Updated grade (e.g., "A", "B+", "C"). (optional)
+        grade_points (float): Updated grade points (e.g., 4.0, 3.5). (optional)
     """
+    logger.info(f"[ENROLLMENT_TOOL] Updating enrollment: {enrollment_id}")
     service = EnrollmentService(prisma)
+    
     try:
-        updated_enrollment = await service.update_enrollment(enrollment_id, enrollment)
+        enrollment_update = EnrollmentUpdate(
+            status=status,
+            grade=grade,
+            gradePoints=grade_points
+        )
+        
+        updated_enrollment = await service.update_enrollment(enrollment_id, enrollment_update)
+        logger.info(f"[ENROLLMENT_TOOL] Enrollment updated successfully: {enrollment_id}")
         return updated_enrollment.model_dump()
     except Exception as e:
+        logger.error(f"[ENROLLMENT_TOOL] Update failed: {str(e)}")
         return {"error": f"Enrollment not found or could not be updated: {str(e)}"}
 
 
@@ -143,11 +246,16 @@ async def delete_existing_enrollment(enrollment_id: str):
     Args:
         enrollment_id (str): The unique ID of the enrollment to delete. (required)
     """
+    logger.info(f"[ENROLLMENT_TOOL] Deleting enrollment: {enrollment_id}")
     service = EnrollmentService(prisma)
+    
     try:
         deleted = await service.delete_enrollment(enrollment_id)
         if deleted:
+            logger.info(f"[ENROLLMENT_TOOL] Enrollment deleted successfully: {enrollment_id}")
             return {"message": "Enrollment deleted successfully", "enrollment_id": enrollment_id}
+        logger.error(f"[ENROLLMENT_TOOL] Enrollment not found: {enrollment_id}")
         return {"error": "Enrollment not found"}
     except Exception as e:
+        logger.error(f"[ENROLLMENT_TOOL] Delete failed: {str(e)}")
         return {"error": f"Enrollment not found or could not be deleted: {str(e)}"}

@@ -8,7 +8,11 @@ class UserService:
         self.db = db
 
     async def create_user(self, user_data: UserCreate) -> UserOut:
-        user = await self.db.user.create(data=user_data.dict())
+        # Hash the password before storing
+        user_dict = user_data.dict()
+        user_dict["password"] = hash_password(user_dict["password"])
+        
+        user = await self.db.user.create(data=user_dict)
         return UserOut.from_orm(user)
 
     async def get_user(self, user_id: str) -> Optional[UserOut]:

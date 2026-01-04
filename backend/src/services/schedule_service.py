@@ -68,8 +68,9 @@ class ScheduleService:
         """
         Get teacher's timetable in grid format
         Returns: List[day][period] = [teacher, subject, room] or None
-        Structure: 5 days, 9 periods
+        Structure: 5 days, 8 periods
         """
+        print(f"🔧 get_teacher_timetable_grid called with teacher_id: {teacher_id}")
         DAYS = 5
         PERIODS = 8
         
@@ -84,6 +85,7 @@ class ScheduleService:
         
         # Initialize empty timetable
         timetable = [[None for _ in range(PERIODS)] for _ in range(DAYS)]
+        print(f"🔧 Initialized timetable: {len(timetable)} days x {len(timetable[0])} periods")
         
         # Fetch teacher's schedules
         schedules = await self.db.schedule.find_many(
@@ -111,7 +113,13 @@ class ScheduleService:
                 s.course.courseCode,
                 s.room or "TBA"
             ]
+            print(f"  ✅ Teacher timetable: Added to [{day_idx}][{period_idx}]: {timetable[day_idx][period_idx]}")
         
+        print(f"🔧 Teacher timetable: Returning {len(timetable)} days x {len(timetable[0])} periods")
+        for day_idx, day in enumerate(timetable):
+            non_null = [i for i, p in enumerate(day) if p is not None]
+            if non_null:
+                print(f"  Day {day_idx}: periods with classes: {non_null}")
         return timetable
     
     async def get_student_timetable_grid(self, studentId: str) -> List[List[Optional[List[str]]]]:
@@ -243,15 +251,14 @@ class ScheduleService:
             traceback.print_exc()
             return None
 
-    async def get_full_timetable(self, department_id: Optional[str] = None) -> List[List[List[List[Optional[List[str]]]]]]:
+    async def get_full_timetable(self, department_id: Optional[str] = None) -> List[List[List[Optional[List[str]]]]]:
         """
-        Returns: List[semester][section][day][period] = [teacher, subject, room] or None
-        Structure: 8 semesters, 2 sections each, 5 days, 8 periods
+        Returns: List[semester][day][period] = [teacher, subject, room] or None
+        Structure: 8 semesters, 5 days, 8 periods
         """
         print(f"Getting full timetable for department: {department_id}")
         
         SEMESTERS = 8
-        SECTIONS_PER_SEM = 2
         DAYS = 5
         PERIODS = 8
         
@@ -264,12 +271,9 @@ class ScheduleService:
             "FRIDAY": 4
         }
 
-        # Initialize empty timetable
+        # Initialize empty timetable (removed section dimension)
         timetable = [
-            [
-                [[None for _ in range(PERIODS)] for _ in range(DAYS)]
-                for _ in range(SECTIONS_PER_SEM)
-            ]
+            [[None for _ in range(PERIODS)] for _ in range(DAYS)]
             for _ in range(SEMESTERS)
         ]
 
@@ -309,9 +313,6 @@ class ScheduleService:
                 print(f"❌ Skipping schedule - invalid semester: {s.course.semester}")
                 continue
 
-            # Section logic (simple default - you may need to adjust this)
-            section_idx = 0  # TODO: derive from batch/department if available
-
             # Day index
             day_idx = DAY_INDEX.get(s.dayOfWeek)
             if day_idx is None:
@@ -324,10 +325,10 @@ class ScheduleService:
                 print(f"❌ Skipping schedule - invalid time: {s.startTime}")
                 continue
 
-            print(f"✅ Adding schedule: Sem={semester_idx}, Sec={section_idx}, Day={day_idx}, Period={period_idx}, Course={s.course.courseCode}, Room={s.room}")
+            print(f"✅ Adding schedule: Sem={semester_idx}, Day={day_idx}, Period={period_idx}, Course={s.course.courseCode}, Room={s.room}")
 
-            # Add schedule to timetable
-            timetable[semester_idx][section_idx][day_idx][period_idx] = [
+            # Add schedule to timetable (section dimension removed)
+            timetable[semester_idx][day_idx][period_idx] = [
                 s.teacher.user.name if s.teacher and s.teacher.user else "Unknown",
                 s.course.courseCode,
                 s.room or "TBA"

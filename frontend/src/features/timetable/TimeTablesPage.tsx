@@ -49,7 +49,7 @@ export default function TimeTablesPage() {
         [2, 5],
       ],
       periodCount: 8,
-      sectionsPerSemester: [2, 2, 2, 2, 2, 2, 2, 2],
+      sectionsPerSemester: [1, 1, 1, 1, 1, 1, 1, 1], // Kept for compatibility but not used (no sections)
       semesterCount: 8,
       dayCount: 5,
     });
@@ -122,7 +122,7 @@ export default function TimeTablesPage() {
       console.log("Loaded courses:", courses);
       setSubjectsDetails(courses || {});
 
-      // Set default structure for 4 years (8 semesters)
+      // Set default structure for 4 years (8 semesters), no sections
       const defaultStructure: TimeTableStructure = {
         breaksPerSemester: [
           [2, 5],
@@ -135,7 +135,7 @@ export default function TimeTablesPage() {
           [2, 5],
         ],
         periodCount: 8,
-        sectionsPerSemester: [2, 2, 2, 2, 2, 2, 2, 2],
+        sectionsPerSemester: [1, 1, 1, 1, 1, 1, 1, 1], // Kept for compatibility but not used
         semesterCount: 8,
         dayCount: 5,
       };
@@ -157,10 +157,9 @@ export default function TimeTablesPage() {
     try {
       // Calculate absolute semester index (0-7)
       const semIndex = currentYear * 2 + currentSemester;
-      // For now, using section 0 as default
-      // TODO: Filter by department when backend supports it
-      if (allTimeTables?.[semIndex]?.[0]) {
-        setTimeTable(allTimeTables[semIndex][0]);
+      // Backend now returns [semester][day][period] without section dimension
+      if (allTimeTables?.[semIndex]) {
+        setTimeTable(allTimeTables[semIndex]);
       } else {
         setTimeTable(emptyTimeTableDetails);
       }
@@ -205,7 +204,7 @@ export default function TimeTablesPage() {
     try {
       await timetableService.saveSchedule(
         absoluteSemester + 1,
-        1, // Using section 1 as default
+        0, // Section parameter kept for backward compatibility but not used
         newTimeTable,
         currentDepartment
       );
@@ -213,10 +212,8 @@ export default function TimeTablesPage() {
       // Update both local state and global state
       setTimeTable(newTimeTable);
       const updatedAllTimeTables = [...allTimeTables];
-      if (!updatedAllTimeTables[absoluteSemester]) {
-        updatedAllTimeTables[absoluteSemester] = [];
-      }
-      updatedAllTimeTables[absoluteSemester][0] = newTimeTable;
+      // Backend now returns [semester][day][period] without section dimension
+      updatedAllTimeTables[absoluteSemester] = newTimeTable;
       setAllTimeTables(updatedAllTimeTables);
 
       setShowSelector(false);

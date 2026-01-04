@@ -121,6 +121,14 @@ export default function StudentsPage() {
     setErrors({});
   };
 
+  // Input restriction helpers
+  const isAlphaOnly = (value: string): boolean => /^[A-Za-z\s]*$/.test(value);
+  const isNumericOnly = (value: string): boolean => /^\d*$/.test(value);
+  const isAlphanumericOnly = (value: string): boolean =>
+    /^[A-Za-z0-9]*$/.test(value);
+  const isAlphanumericWithSpace = (value: string): boolean =>
+    /^[A-Za-z0-9\s,.-]*$/.test(value);
+
   // Validation functions
   const validateEmail = (email: string): string | undefined => {
     if (!email.trim()) return "Email is required";
@@ -137,6 +145,7 @@ export default function StudentsPage() {
 
   const validateName = (name: string): string | undefined => {
     if (!name.trim()) return "Name is required";
+    if (!isAlphaOnly(name)) return "Name can only contain letters and spaces";
     if (name.trim().length < 2) return "Name must be at least 2 characters";
     return undefined;
   };
@@ -148,6 +157,7 @@ export default function StudentsPage() {
 
   const validateBatch = (batch: string): string | undefined => {
     if (!batch.trim()) return "Batch is required";
+    if (!isNumericOnly(batch)) return "Batch can only contain numbers";
     const year = parseInt(batch);
     if (isNaN(year) || year < 1900 || year > new Date().getFullYear() + 10) {
       return "Please enter a valid year (e.g., 2023)";
@@ -162,16 +172,25 @@ export default function StudentsPage() {
     return undefined;
   };
 
+  const validatePhoneNumber = (phone: string): string | undefined => {
+    if (!phone.trim()) return undefined; // Optional field
+    if (!isNumericOnly(phone)) return "Phone number can only contain digits";
+    if (phone.length !== 10) return "Phone number must be exactly 10 digits";
+    return undefined;
+  };
+
   const validateStudentId = (
     studentId: string,
     department: string,
     batch: string
   ): string | undefined => {
     if (!studentId.trim()) return "Student ID is required";
+    if (!isAlphanumericOnly(studentId))
+      return "Student ID can only contain letters and numbers (no spaces)";
 
     // Expected format: 1RV<batch_last2><dept_code><3-4_digits>
     // Example:
-    const val = Number(batch.slice(-2)) - 4;
+    const val = Number(batch.slice(-2));
 
     const expectedPrefix = `1RV${val}${department}`;
 
@@ -231,10 +250,8 @@ export default function StudentsPage() {
     newErrors.batch = validateBatch(formData.batch || "");
     newErrors.semester = validateSemester(formData.semester || 0);
 
-    if (formData.phoneNumber && formData.phoneNumber.trim()) {
-      if (!/^\d{10}$/.test(formData.phoneNumber)) {
-        newErrors.phoneNumber = "Phone number must be 10 digits";
-      }
+    if (formData.phoneNumber) {
+      newErrors.phoneNumber = validatePhoneNumber(formData.phoneNumber);
     }
 
     // Filter out undefined errors
@@ -576,13 +593,19 @@ export default function StudentsPage() {
                 placeholder="e.g., John Doe"
                 value={formData.name}
                 onChange={(e) => {
-                  setFormData({ ...formData, name: e.target.value });
-                  clearError("name");
+                  const value = e.target.value;
+                  if (value === "" || isAlphaOnly(value)) {
+                    setFormData({ ...formData, name: value });
+                    clearError("name");
+                  }
                 }}
                 className={
                   errors.name ? "border-red-500 focus-visible:ring-red-500" : ""
                 }
               />
+              <p className="text-xs text-muted-foreground">
+                Letters and spaces only
+              </p>
               {errors.name && (
                 <p className="text-sm text-red-500">{errors.name}</p>
               )}
@@ -630,9 +653,12 @@ export default function StudentsPage() {
                 placeholder="e.g., 2023"
                 value={formData.batch}
                 onChange={(e) => {
-                  setFormData({ ...formData, batch: e.target.value });
-                  clearError("batch");
-                  clearError("studentId");
+                  const value = e.target.value;
+                  if (value === "" || isNumericOnly(value)) {
+                    setFormData({ ...formData, batch: value });
+                    clearError("batch");
+                    clearError("studentId");
+                  }
                 }}
                 className={
                   errors.batch
@@ -640,6 +666,9 @@ export default function StudentsPage() {
                     : ""
                 }
               />
+              <p className="text-xs text-muted-foreground">
+                Numbers only (4 digits recommended)
+              </p>
               {errors.batch && (
                 <p className="text-sm text-red-500">{errors.batch}</p>
               )}
@@ -655,8 +684,14 @@ export default function StudentsPage() {
                 placeholder="e.g., 1RV23IS056"
                 value={formData.studentId}
                 onChange={(e) => {
-                  setFormData({ ...formData, studentId: e.target.value });
-                  clearError("studentId");
+                  const value = e.target.value;
+                  if (value === "" || isAlphanumericOnly(value)) {
+                    setFormData({
+                      ...formData,
+                      studentId: value.toUpperCase(),
+                    });
+                    clearError("studentId");
+                  }
                 }}
                 className={
                   errors.studentId
@@ -805,9 +840,15 @@ export default function StudentsPage() {
                 id="edit-name"
                 value={formData.name}
                 onChange={(e) => {
-                  setFormData({ ...formData, name: e.target.value });
+                  const value = e.target.value;
+                  if (value === "" || isAlphaOnly(value)) {
+                    setFormData({ ...formData, name: value });
+                  }
                 }}
               />
+              <p className="text-xs text-muted-foreground">
+                Letters and spaces only
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -881,8 +922,11 @@ export default function StudentsPage() {
                 placeholder="e.g., 2023"
                 value={formData.batch}
                 onChange={(e) => {
-                  setFormData({ ...formData, batch: e.target.value });
-                  clearError("batch");
+                  const value = e.target.value;
+                  if (value === "" || isNumericOnly(value)) {
+                    setFormData({ ...formData, batch: value });
+                    clearError("batch");
+                  }
                 }}
                 className={
                   errors.batch
@@ -890,6 +934,9 @@ export default function StudentsPage() {
                     : ""
                 }
               />
+              <p className="text-xs text-muted-foreground">
+                Numbers only (4 digits recommended)
+              </p>
               {errors.batch && (
                 <p className="text-sm text-red-500">{errors.batch}</p>
               )}
@@ -901,10 +948,14 @@ export default function StudentsPage() {
               <Input
                 id="edit-phone"
                 placeholder="e.g., 9876543210"
+                maxLength={10}
                 value={formData.phoneNumber || ""}
                 onChange={(e) => {
-                  setFormData({ ...formData, phoneNumber: e.target.value });
-                  clearError("phoneNumber");
+                  const value = e.target.value;
+                  if (value === "" || isNumericOnly(value)) {
+                    setFormData({ ...formData, phoneNumber: value });
+                    clearError("phoneNumber");
+                  }
                 }}
                 className={
                   errors.phoneNumber
@@ -912,6 +963,9 @@ export default function StudentsPage() {
                     : ""
                 }
               />
+              <p className="text-xs text-muted-foreground">
+                10 digits, numbers only
+              </p>
               {errors.phoneNumber && (
                 <p className="text-sm text-red-500">{errors.phoneNumber}</p>
               )}
@@ -924,10 +978,16 @@ export default function StudentsPage() {
                 id="edit-address"
                 placeholder="e.g., 123 Main St"
                 value={formData.address || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, address: e.target.value })
-                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "" || isAlphanumericWithSpace(value)) {
+                    setFormData({ ...formData, address: value });
+                  }
+                }}
               />
+              <p className="text-xs text-muted-foreground">
+                Letters, numbers, spaces, and basic punctuation (,.-) allowed
+              </p>
             </div>
 
             {/* Date of Birth */}

@@ -73,18 +73,13 @@ class TimetableService {
     departmentId?: string
   ): Promise<void> {
     const api = this.getApi();
+    // Convert timetable object to JSON string as backend expects string format
     return api.post("/schedules/save", {
       semester,
       section,
-      timetable,
+      timetable: JSON.stringify(timetable),
       departmentId,
     });
-  }
-
-  // Generate timetable automatically using AI/algorithm
-  async generateTimeTable(): Promise<FullTimeTable> {
-    const api = this.getApi();
-    return api.post("/schedules/generate", {});
   }
 
   // Get all teachers
