@@ -6,6 +6,9 @@ from src.models.schemas import (
     CourseOut
 )
 from src.config.database import prisma
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @tool
@@ -13,8 +16,10 @@ async def list_all_courses():
     """Get all courses from the database. 
     Use this when user asks to see all courses, list courses, or show available courses.
     Returns course details including teacher and department information."""
+    logger.info("[COURSE_TOOL] Listing all courses")
     service = CourseService(prisma)
     courses = await service.get_all_courses()
+    logger.info(f"[COURSE_TOOL] Found {len(courses)} courses")
     
     result = []
     for course in courses:
@@ -73,6 +78,7 @@ async def get_course_by_id(course_id: str = None, course_code: str = None, cours
         - "Show me Data Structures course" → Use course_name="Data Structures"
         - "Find Database course" → Use course_name="Database"
     """
+    logger.info(f"[COURSE_TOOL] Getting course by: id={course_id}, code={course_code}, name={course_name}")
     service = CourseService(prisma)
     
     # Try to find course by provided parameter
@@ -103,8 +109,10 @@ async def get_course_by_id(course_id: str = None, course_code: str = None, cours
     
     if not course:
         search_param = course_code or course_name or course_id
+        logger.warning(f"[COURSE_TOOL] Course not found with: {search_param}")
         return {"error": f"Course not found with: {search_param}"}
     
+    logger.info(f"[COURSE_TOOL] Found course: {course.courseName} ({course.courseCode})")
     course_data = {
         "id": course.id,
         "courseCode": course.courseCode,
@@ -146,36 +154,93 @@ async def get_course_by_id(course_id: str = None, course_code: str = None, cours
 
 
 @tool
-async def create_new_course(course: CourseCreate):
+async def create_new_course(
+    course_code: str,
+    course_name: str,
+    credits: int,
+    semester: int,
+    department_code: str = None,
+    department_id: str = None,
+    description: str = None,
+    syllabus: str = None,
+    max_students: int = None,
+    is_active: bool = True
+):
     """
     Create a new course in the database.
 
     Args:
-        course (CourseCreate): An object containing all information required to create a new course. The fields are:
-
-            course_code (str): Unique course code (e.g., "CS101"). (required)
-            course_name (str): Full name of the course. (required)
-            credits (int): Number of credit hours. (required)
-            department_id (str): ID of the department offering the course. (required)
-            semester (int): Semester level (1-8). (required)
-            
-            description (Optional[str]): Course description. (optional)
-            syllabus (Optional[str]): Course syllabus details. (optional)
-            max_students (Optional[int]): Maximum number of students allowed. (optional)
-            is_active (bool): Whether the course is currently active. (optional, default=True)
+        course_code (str): Unique course code (e.g., "CS101"). (required)
+        course_name (str): Full name of the course. (required)
+        credits (int): Number of credit hours. (required)
+        semester (int): Semester level (1-8). (required)
+        department_code (str): Code of the department offering the course (e.g., "CS", "MATH"). Preferred over department_id. (optional)
+        department_id (str): ID of the department (use if department_code not available). (optional)
+        description (str): Course description. (optional)
+        syllabus (str): Course syllabus details. (optional)
+        max_students (int): Maximum number of students allowed. (optional)
+        is_active (bool): Whether the course is currently active. (optional, default=True)
+    
+    Note: Provide either department_code (preferred) or department_id.
     """
+    logger.info(f"[COURSE_TOOL] Creating course: {course_code} - {course_name}")
     service = CourseService(prisma)
     try:
-        new_course = await service.create_course(course)
+        # Find department by code if provided
+        resolved_dept_id = department_id
+        if department_code:
+            logger.info(f"[COURSE_TOOL] Looking up department by code: {department_code}")
+            dept = await prisma.department.find_first(
+                where={"code": {"equals": department_code, "mode": "insensitive"}}
+            )
+            if not dept:
+                logger.error(f"[COURSE_TOOL] Department not found with code: {department_code}")
+                return {"error": f"Department not found with code: {department_code}"}
+            resolved_dept_id = dept.id
+            logger.info(f"[COURSE_TOOL] Found department: {dept.name} (ID: {dept.id})")
+        elif not department_id:
+            logger.error("[COURSE_TOOL] Neither department_code nor department_id provided")
+            return {"error": "Please provide either department_code or department_id"}
+        
+        # Create course object
+        course_data = CourseCreate(
+            courseCode=course_code,
+            courseName=course_name,
+            credits=credits,
+            departmentId=resolved_dept_id,
+            semester=semester,
+            description=description,
+            syllabus=syllabus,
+            maxStudents=max_students,
+            isActive=is_active
+        )
+        
+        new_course = await service.create_course(course_data)
+        logger.info(f"[COURSE_TOOL] Course created successfully: {new_course.id}")
         # Fetch with relations for complete response
         complete_course = await service.get_course_by_id(new_course.id)
         return CourseOut.model_validate(complete_course).model_dump()
     except Exception as e:
+        logger.error(f"[COURSE_TOOL] Failed to create course: {str(e)}")
         return {"error": f"Failed to create course: {str(e)}"}
 
 
 @tool
-async def update_existing_course(course_id: str = None, course_code: str = None, course_name: str = None, course: CourseUpdate = None):
+async def update_existing_course(
+    course_id: str = None,
+    course_code: str = None,
+    course_name: str = None,
+    new_course_code: str = None,
+    new_course_name: str = None,
+    credits: int = None,
+    department_code: str = None,
+    department_id: str = None,
+    semester: int = None,
+    description: str = None,
+    syllabus: str = None,
+    max_students: int = None,
+    is_active: bool = None
+):
     """Update an existing course's information.
     You can identify the course by ID, course code, or course name.
     
@@ -183,21 +248,23 @@ async def update_existing_course(course_id: str = None, course_code: str = None,
         course_id (str): The unique ID of the course to update. (optional)
         course_code (str): The course code to find the course (e.g., "CS101"). (optional)
         course_name (str): The course name to find the course (e.g., "Data Structures"). (optional)
-        course (CourseUpdate): An object containing the fields to update. All fields are optional:
-            - course_code (Optional[str]): Updated course code. (optional)
-            - course_name (Optional[str]): Updated course name. (optional)
-            - credits (Optional[int]): Updated credit hours. (optional)
-            - department_id (Optional[str]): Updated department ID. (optional)
-            - semester (Optional[int]): Updated semester level. (optional)
-            - description (Optional[str]): Updated description. (optional)
-            - syllabus (Optional[str]): Updated syllabus. (optional)
-            - max_students (Optional[int]): Updated max students. (optional)
-            - is_active (Optional[bool]): Updated active status. (optional)
+        new_course_code (str): Updated course code. (optional)
+        new_course_name (str): Updated course name. (optional)
+        credits (int): Updated credit hours. (optional)
+        department_code (str): Updated department code (e.g., "CS", "MATH"). Preferred over department_id. (optional)
+        department_id (str): Updated department ID (use if department_code not available). (optional)
+        semester (int): Updated semester level. (optional)
+        description (str): Updated description. (optional)
+        syllabus (str): Updated syllabus. (optional)
+        max_students (int): Updated max students. (optional)
+        is_active (bool): Updated active status. (optional)
     
     Examples:
-        - "Update CS101 credits to 4" → Use course_code="CS101"
-        - "Change Data Structures description" → Use course_name="Data Structures"
+        - "Update CS101 credits to 4" → Use course_code="CS101", credits=4
+        - "Change Data Structures description" → Use course_name="Data Structures", description="..."
+        - "Move CS101 to MATH department" → Use course_code="CS101", department_code="MATH"
     """
+    logger.info(f"[COURSE_TOOL] Updating course: id={course_id}, code={course_code}, name={course_name}")
     service = CourseService(prisma)
     
     try:
@@ -215,21 +282,54 @@ async def update_existing_course(course_id: str = None, course_code: str = None,
                 where={"courseName": {"contains": course_name, "mode": "insensitive"}}
             )
         else:
+            logger.error("[COURSE_TOOL] No course identifier provided")
             return {"error": "Please provide either course_id, course_code, or course_name"}
         
         if not target_course:
             search_param = course_code or course_name or course_id
+            logger.warning(f"[COURSE_TOOL] Course not found with: {search_param}")
             return {"error": f"Course not found with: {search_param}"}
         
+        logger.info(f"[COURSE_TOOL] Found course to update: {target_course.courseName} ({target_course.courseCode})")
+        
+        # Resolve department if department_code is provided
+        resolved_dept_id = department_id
+        if department_code:
+            logger.info(f"[COURSE_TOOL] Looking up department by code: {department_code}")
+            dept = await prisma.department.find_first(
+                where={"code": {"equals": department_code, "mode": "insensitive"}}
+            )
+            if not dept:
+                logger.error(f"[COURSE_TOOL] Department not found with code: {department_code}")
+                return {"error": f"Department not found with code: {department_code}"}
+            resolved_dept_id = dept.id
+            logger.info(f"[COURSE_TOOL] Found department: {dept.name} (ID: {dept.id})")
+        
+        # Build update object with only provided fields
+        update_data = CourseUpdate(
+            courseCode=new_course_code,
+            courseName=new_course_name,
+            credits=credits,
+            departmentId=resolved_dept_id,
+            semester=semester,
+            description=description,
+            syllabus=syllabus,
+            maxStudents=max_students,
+            isActive=is_active
+        )
+        
         # Update using the found course ID
-        updated_course = await service.update_course(target_course.id, course)
+        updated_course = await service.update_course(target_course.id, update_data)
         if not updated_course:
+            logger.error("[COURSE_TOOL] Course update failed")
             return {"error": "Course not found"}
         
+        logger.info(f"[COURSE_TOOL] Course updated successfully: {updated_course.id}")
         # Fetch with relations for complete response
         complete_course = await service.get_course_by_id(updated_course.id)
         return CourseOut.model_validate(complete_course).model_dump()
     except Exception as e:
+        logger.error(f"[COURSE_TOOL] Update failed: {str(e)}")
         return {"error": f"Course not found or could not be updated: {str(e)}"}
 
 
@@ -249,6 +349,7 @@ async def delete_existing_course(course_id: str = None, course_code: str = None,
         - "Delete course CS101" → Use course_code="CS101"
         - "Remove Database course" → Use course_name="Database"
     """
+    logger.info(f"[COURSE_TOOL] Deleting course: id={course_id}, code={course_code}, name={course_name}")
     service = CourseService(prisma)
     
     try:
@@ -266,21 +367,28 @@ async def delete_existing_course(course_id: str = None, course_code: str = None,
                 where={"courseName": {"contains": course_name, "mode": "insensitive"}}
             )
         else:
+            logger.error("[COURSE_TOOL] No course identifier provided")
             return {"error": "Please provide either course_id, course_code, or course_name"}
         
         if not target_course:
             search_param = course_code or course_name or course_id
+            logger.warning(f"[COURSE_TOOL] Course not found with: {search_param}")
             return {"error": f"Course not found with: {search_param}"}
+        
+        logger.info(f"[COURSE_TOOL] Found course to delete: {target_course.courseName} ({target_course.courseCode})")
         
         # Delete using the found course ID
         deleted_course = await service.delete_course(target_course.id)
         if deleted_course:
+            logger.info(f"[COURSE_TOOL] Course deleted successfully: {deleted_course.courseCode}")
             return {
                 "message": "Course deleted successfully",
                 "course_id": target_course.id,
                 "course_code": deleted_course.courseCode,
                 "course_name": deleted_course.courseName
             }
+        logger.error("[COURSE_TOOL] Course deletion failed")
         return {"error": "Course not found"}
     except Exception as e:
+        logger.error(f"[COURSE_TOOL] Delete failed: {str(e)}")
         return {"error": f"Course not found or could not be deleted: {str(e)}"}

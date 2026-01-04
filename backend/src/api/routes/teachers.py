@@ -49,6 +49,12 @@ async def create_teacher(teacher: TeacherCreateWithUser, current_user: UserRespo
         return new_teacher
 
     except Exception as e:
+        if 'new_user' in locals() and new_user:
+            try:
+                await user_service.delete_user(new_user.id)
+            except Exception as rollback_error:
+                print(f"Rollback failed: {rollback_error}")
+
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/{teacher_id}/courses", response_model=List[Course])

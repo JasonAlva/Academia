@@ -8,7 +8,6 @@ import {
   IconSettings,
   IconHelp,
   IconUserCircle,
-  
   IconSchool,
   IconClipboardCheck,
   IconFileText,
@@ -31,6 +30,7 @@ export interface DashboardConfig {
     name: string;
     email: string;
     avatar: string;
+    role: string;
   };
   companyName: string;
   companyLogo: Icon;

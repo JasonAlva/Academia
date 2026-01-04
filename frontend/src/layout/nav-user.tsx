@@ -1,10 +1,8 @@
 "use client";
 
 import {
-  IconCreditCard,
   IconDotsVertical,
   IconLogout,
-  IconNotification,
   IconUserCircle,
 } from "@tabler/icons-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,22 +22,30 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/auth/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface NavUserProps {
   user: {
     name: string;
     email: string;
     avatar: string;
+    role: string;
   };
 }
 
 export function NavUser({ user }: NavUserProps) {
   const { isMobile } = useSidebar();
   const { logout } = useAuth();
-
+  const navigate = useNavigate();
   const handleLogout = () => {
     logout();
     window.location.href = "/auth/login";
+  };
+
+  const handleClick = () => {
+    const role = user.role!.toLowerCase();
+
+    navigate(`${role}/profile`); // change route within your app
   };
 
   const getInitials = (name: string) => {
@@ -99,17 +105,9 @@ export function NavUser({ user }: NavUserProps) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleClick}>
                 <IconUserCircle />
                 Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification />
-                Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

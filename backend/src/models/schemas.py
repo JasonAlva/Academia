@@ -131,8 +131,8 @@ class TeacherUpdate(BaseModel):
     department: Optional[str] = None
     designation: Optional[str] = None
     specialization: Optional[str] = None
-    phoneNumber: Optional[str] 
-    officeRoom: Optional[str] =None
+    phoneNumber: Optional[str] = None
+    officeRoom: Optional[str] = None
     officeHours: Optional[str] = None
     joiningDate: Optional[datetime] = None
 

@@ -283,6 +283,7 @@ export const getRoleConfig = (role: UserRole): RoleConfig => {
 export interface DashboardConfig extends RoleConfig {
   user: {
     name: string;
+    role: string;
     email: string;
     avatar: string;
   };
