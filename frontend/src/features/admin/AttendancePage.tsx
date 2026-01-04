@@ -45,18 +45,25 @@ import {
 } from "@tabler/icons-react";
 
 export default function AttendancePage() {
-  const [activeTab, setActiveTab] = useState<"students" | "teachers">("students");
+  const [activeTab, setActiveTab] = useState<"students" | "teachers">(
+    "students"
+  );
 
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Attendance Management</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Attendance Management
+        </h1>
         <p className="text-muted-foreground">
           Monitor and track attendance records for students and teachers
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "students" | "teachers")}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as "students" | "teachers")}
+      >
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="students" className="flex items-center gap-2">
             <IconUser size={18} />
@@ -83,11 +90,14 @@ export default function AttendancePage() {
 // Students Attendance Tab Component
 function StudentsAttendanceTab() {
   const [students, setStudents] = useState<StudentAttendance[]>([]);
-  const [filteredStudents, setFilteredStudents] = useState<StudentAttendance[]>([]);
+  const [filteredStudents, setFilteredStudents] = useState<StudentAttendance[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStudent, setSelectedStudent] = useState<StudentAttendance | null>(null);
+  const [selectedStudent, setSelectedStudent] =
+    useState<StudentAttendance | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const attendanceService = useAttendanceService();
@@ -134,14 +144,18 @@ function StudentsAttendanceTab() {
 
   const getAttendanceStatus = (percentage: number) => {
     if (percentage >= 75) return { label: "Good", variant: "default" as const };
-    if (percentage >= 60) return { label: "Warning", variant: "secondary" as const };
+    if (percentage >= 60)
+      return { label: "Warning", variant: "secondary" as const };
     return { label: "Critical", variant: "destructive" as const };
   };
 
   const calculateOverallAttendance = (courses: CourseAttendance[]) => {
     if (courses.length === 0) return 0;
     const total = courses.reduce((sum, course) => sum + course.totalClasses, 0);
-    const attended = courses.reduce((sum, course) => sum + course.attendedClasses, 0);
+    const attended = courses.reduce(
+      (sum, course) => sum + course.attendedClasses,
+      0
+    );
     return total > 0 ? Math.round((attended / total) * 100) : 0;
   };
 
@@ -167,7 +181,10 @@ function StudentsAttendanceTab() {
     <div className="space-y-4">
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
-          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+          <IconSearch
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            size={18}
+          />
           <Input
             placeholder="Search by name, ID, or department..."
             value={searchQuery}
@@ -205,13 +222,18 @@ function StudentsAttendanceTab() {
               <TableBody>
                 {filteredStudents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    <TableCell
+                      colSpan={8}
+                      className="text-center text-muted-foreground py-8"
+                    >
                       No students found
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredStudents.map((student) => {
-                    const overallAttendance = calculateOverallAttendance(student.courses);
+                    const overallAttendance = calculateOverallAttendance(
+                      student.courses
+                    );
                     const status = getAttendanceStatus(overallAttendance);
                     return (
                       <TableRow
@@ -219,24 +241,36 @@ function StudentsAttendanceTab() {
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleStudentClick(student)}
                       >
-                        <TableCell className="font-medium">{student.studentIdNumber}</TableCell>
+                        <TableCell className="font-medium">
+                          {student.studentIdNumber}
+                        </TableCell>
                         <TableCell>{student.studentName}</TableCell>
                         <TableCell>{student.department}</TableCell>
                         <TableCell>{student.semester}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{student.courses.length}</Badge>
+                          <Badge variant="outline">
+                            {student.courses.length}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Progress value={overallAttendance} className="w-20" />
-                            <span className="text-sm font-medium">{overallAttendance}%</span>
+                            <Progress
+                              value={overallAttendance}
+                              className="w-20"
+                            />
+                            <span className="text-sm font-medium">
+                              {overallAttendance}%
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant={status.variant}>{status.label}</Badge>
                         </TableCell>
                         <TableCell>
-                          <IconChevronRight size={18} className="text-muted-foreground" />
+                          <IconChevronRight
+                            size={18}
+                            className="text-muted-foreground"
+                          />
                         </TableCell>
                       </TableRow>
                     );
@@ -250,15 +284,15 @@ function StudentsAttendanceTab() {
 
       {/* Student Detail Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="!max-w-5xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <IconUser size={24} />
               {selectedStudent?.studentName}
             </DialogTitle>
             <DialogDescription>
-              {selectedStudent?.studentIdNumber} • {selectedStudent?.department} • Semester{" "}
-              {selectedStudent?.semester}
+              {selectedStudent?.studentIdNumber} • {selectedStudent?.department}{" "}
+              • Semester {selectedStudent?.semester}
             </DialogDescription>
           </DialogHeader>
 
@@ -267,7 +301,9 @@ function StudentsAttendanceTab() {
               <div className="grid grid-cols-2 gap-4">
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Overall Attendance</CardTitle>
+                    <CardTitle className="text-sm font-medium">
+                      Overall Attendance
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold">
@@ -277,10 +313,14 @@ function StudentsAttendanceTab() {
                 </Card>
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
+                    <CardTitle className="text-sm font-medium">
+                      Total Courses
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold">{selectedStudent.courses.length}</div>
+                    <div className="text-3xl font-bold">
+                      {selectedStudent.courses.length}
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -303,23 +343,32 @@ function StudentsAttendanceTab() {
                     </TableHeader>
                     <TableBody>
                       {selectedStudent.courses.map((course) => {
-                        const status = getAttendanceStatus(course.attendancePercentage);
+                        const status = getAttendanceStatus(
+                          course.attendancePercentage
+                        );
                         return (
                           <TableRow key={course.courseId}>
-                            <TableCell className="font-medium">{course.courseCode}</TableCell>
+                            <TableCell className="font-medium">
+                              {course.courseCode}
+                            </TableCell>
                             <TableCell>{course.courseName}</TableCell>
                             <TableCell>{course.attendedClasses}</TableCell>
                             <TableCell>{course.totalClasses}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                <Progress value={course.attendancePercentage} className="w-20" />
+                                <Progress
+                                  value={course.attendancePercentage}
+                                  className="w-20"
+                                />
                                 <span className="text-sm font-medium">
                                   {course.attendancePercentage}%
                                 </span>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={status.variant}>{status.label}</Badge>
+                              <Badge variant={status.variant}>
+                                {status.label}
+                              </Badge>
                             </TableCell>
                           </TableRow>
                         );
@@ -339,11 +388,14 @@ function StudentsAttendanceTab() {
 // Teachers Attendance Tab Component
 function TeachersAttendanceTab() {
   const [teachers, setTeachers] = useState<TeacherAttendance[]>([]);
-  const [filteredTeachers, setFilteredTeachers] = useState<TeacherAttendance[]>([]);
+  const [filteredTeachers, setFilteredTeachers] = useState<TeacherAttendance[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTeacher, setSelectedTeacher] = useState<TeacherAttendance | null>(null);
+  const [selectedTeacher, setSelectedTeacher] =
+    useState<TeacherAttendance | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const attendanceService = useAttendanceService();
@@ -388,13 +440,21 @@ function TeachersAttendanceTab() {
     setDialogOpen(true);
   };
 
-  const calculateTotalClassesConducted = (courses: TeacherCourseAttendance[]) => {
-    return courses.reduce((sum, course) => sum + course.totalClassesConducted, 0);
+  const calculateTotalClassesConducted = (
+    courses: TeacherCourseAttendance[]
+  ) => {
+    return courses.reduce(
+      (sum, course) => sum + course.totalClassesConducted,
+      0
+    );
   };
 
   const calculateAverageAttendance = (courses: TeacherCourseAttendance[]) => {
     if (courses.length === 0) return 0;
-    const total = courses.reduce((sum, course) => sum + course.averageAttendancePercentage, 0);
+    const total = courses.reduce(
+      (sum, course) => sum + course.averageAttendancePercentage,
+      0
+    );
     return Math.round(total / courses.length);
   };
 
@@ -420,7 +480,10 @@ function TeachersAttendanceTab() {
     <div className="space-y-4">
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
-          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+          <IconSearch
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            size={18}
+          />
           <Input
             placeholder="Search by name, ID, or department..."
             value={searchQuery}
@@ -457,40 +520,59 @@ function TeachersAttendanceTab() {
               <TableBody>
                 {filteredTeachers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    <TableCell
+                      colSpan={7}
+                      className="text-center text-muted-foreground py-8"
+                    >
                       No teachers found
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredTeachers.map((teacher) => {
-                    const totalClasses = calculateTotalClassesConducted(teacher.courses);
-                    const avgAttendance = calculateAverageAttendance(teacher.courses);
+                    const totalClasses = calculateTotalClassesConducted(
+                      teacher.courses
+                    );
+                    const avgAttendance = calculateAverageAttendance(
+                      teacher.courses
+                    );
                     return (
                       <TableRow
                         key={teacher.teacherId}
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleTeacherClick(teacher)}
                       >
-                        <TableCell className="font-medium">{teacher.teacherIdNumber}</TableCell>
+                        <TableCell className="font-medium">
+                          {teacher.teacherIdNumber}
+                        </TableCell>
                         <TableCell>{teacher.teacherName}</TableCell>
                         <TableCell>{teacher.department}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{teacher.courses.length}</Badge>
+                          <Badge variant="outline">
+                            {teacher.courses.length}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <IconCalendar size={16} className="text-muted-foreground" />
+                            <IconCalendar
+                              size={16}
+                              className="text-muted-foreground"
+                            />
                             <span className="font-medium">{totalClasses}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Progress value={avgAttendance} className="w-20" />
-                            <span className="text-sm font-medium">{avgAttendance}%</span>
+                            <span className="text-sm font-medium">
+                              {avgAttendance}%
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <IconChevronRight size={18} className="text-muted-foreground" />
+                          <IconChevronRight
+                            size={18}
+                            className="text-muted-foreground"
+                          />
                         </TableCell>
                       </TableRow>
                     );
@@ -520,15 +602,21 @@ function TeachersAttendanceTab() {
               <div className="grid grid-cols-3 gap-4">
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
+                    <CardTitle className="text-sm font-medium">
+                      Total Courses
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold">{selectedTeacher.courses.length}</div>
+                    <div className="text-3xl font-bold">
+                      {selectedTeacher.courses.length}
+                    </div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Classes Conducted</CardTitle>
+                    <CardTitle className="text-sm font-medium">
+                      Classes Conducted
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold">
@@ -538,7 +626,9 @@ function TeachersAttendanceTab() {
                 </Card>
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Avg. Attendance</CardTitle>
+                    <CardTitle className="text-sm font-medium">
+                      Avg. Attendance
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold">
@@ -566,20 +656,30 @@ function TeachersAttendanceTab() {
                     <TableBody>
                       {selectedTeacher.courses.map((course) => (
                         <TableRow key={course.courseId}>
-                          <TableCell className="font-medium">{course.courseCode}</TableCell>
+                          <TableCell className="font-medium">
+                            {course.courseCode}
+                          </TableCell>
                           <TableCell>{course.courseName}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <IconCalendar size={16} className="text-muted-foreground" />
+                              <IconCalendar
+                                size={16}
+                                className="text-muted-foreground"
+                              />
                               <span>{course.totalClassesConducted}</span>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline">{course.totalStudentsEnrolled}</Badge>
+                            <Badge variant="outline">
+                              {course.totalStudentsEnrolled}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Progress value={course.averageAttendancePercentage} className="w-20" />
+                              <Progress
+                                value={course.averageAttendancePercentage}
+                                className="w-20"
+                              />
                               <span className="text-sm font-medium">
                                 {course.averageAttendancePercentage}%
                               </span>

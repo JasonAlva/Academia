@@ -134,7 +134,7 @@ export default function TeacherAttendancePage() {
 
         // Initialize all students as present by default
         const initialAttendance: Record<string, boolean> = {};
-        data.forEach((student) => {
+        data.forEach((student: Student) => {
           initialAttendance[student.id] = true;
         });
         setAttendance(initialAttendance);

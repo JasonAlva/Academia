@@ -62,18 +62,30 @@ async def get_class_session(session_id: str):
 
 
 @tool
-async def get_course_sessions(course_id: str, date: Optional[str] = None):
+async def get_course_sessions(course_code: str, date: Optional[str] = None):
     """Get all class sessions for a specific course, optionally filtered by date.
     
     Args:
-        course_id: The unique identifier of the course
+        course_code: Course code (e.g., 'CS101', 'MATH201')
         date: Optional date filter in ISO format (YYYY-MM-DD)
     """
+    print(f"[ATTENDANCE_TOOL] get_course_sessions: course_code={course_code}, date={date}")
     try:
+        # Find course by course code
+        course = await prisma.course.find_first(
+            where={'courseCode': {'equals': course_code, 'mode': 'insensitive'}}
+        )
+        if not course:
+            print(f"[ATTENDANCE_TOOL] ❌ Course not found: {course_code}")
+            return {"error": f"Course not found with code: {course_code}"}
+        print(f"[ATTENDANCE_TOOL] ✅ Found course: {course.courseName} (ID: {course.id})")
+        
         date_obj = datetime.fromisoformat(date) if date else None
-        sessions = await AttendanceService.get_course_sessions(course_id, date_obj, prisma)
+        sessions = await AttendanceService.get_course_sessions(course.id, date_obj, prisma)
+        print(f"[ATTENDANCE_TOOL] ✅ Found {len(sessions)} sessions")
         return [ClassSessionOut.model_validate(s).model_dump() for s in sessions]
     except Exception as e:
+        print(f"[ATTENDANCE_TOOL] ❌ Failed: {str(e)}")
         return {"error": f"Failed to get course sessions: {str(e)}"}
 
 
@@ -119,42 +131,202 @@ async def delete_class_session(session_id: str):
 # ==================== STUDENT ATTENDANCE TOOLS ====================
 
 @tool
-async def mark_student_attendance(attendance: StudentAttendanceCreate, marked_by_id: str):
+async def mark_student_attendance(
+    course_code: str,
+    student_id: str,
+    status: str,
+    date: Optional[str] = None,
+    remarks: Optional[str] = None,
+    marked_by_id: Optional[str] = None
+):
     """
     Mark attendance for a student in a class session.
+    The session will be automatically found or created based on the course and date.
 
     Args:
-        attendance (StudentAttendanceCreate): An object containing attendance information:
-            - sessionId (str): ID of the class session. (required)
-            - studentId (str): ID of the student. (required)
-            - status (str): Attendance status (PRESENT, ABSENT, LATE, EXCUSED). (required)
-            - remarks (Optional[str]): Additional remarks. (optional)
-        
-        marked_by_id (str): ID of the teacher/admin marking the attendance. (required)
+        course_code (str): Course code (e.g., 'CS101', 'MATH201'). (required)
+        student_id (str): Student ID (e.g., 'S001', 'S002'). (required)
+        status (str): Attendance status (PRESENT, ABSENT, LATE, EXCUSED). (required)
+        date (Optional[str]): Date of the class (YYYY-MM-DD). If not provided, uses today's date. (optional)
+        remarks (Optional[str]): Additional remarks. (optional)
+        marked_by_id (Optional[str]): ID of the teacher/admin marking the attendance. (optional)
     """
+    print(f"[ATTENDANCE_TOOL] mark_student_attendance: course_code={course_code}, student_id={student_id}, status={status}, date={date}")
     try:
-        attendance_record = await AttendanceService.mark_attendance(attendance, marked_by_id, prisma)
+        # Find course by course code
+        print(f"[ATTENDANCE_TOOL] Looking up course by code: {course_code}")
+        course = await prisma.course.find_first(
+            where={'courseCode': {'equals': course_code, 'mode': 'insensitive'}},
+            include={'teacher': True}
+        )
+        if not course:
+            print(f"[ATTENDANCE_TOOL] ❌ Course not found: {course_code}")
+            return {"error": f"Course not found with code: {course_code}"}
+        print(f"[ATTENDANCE_TOOL] ✅ Found course: {course.courseName} (ID: {course.id})")
+        
+        # Find student by studentId
+        print(f"[ATTENDANCE_TOOL] Looking up student by ID: {student_id}")
+        student = await prisma.student.find_first(
+            where={'studentId': {'equals': student_id, 'mode': 'insensitive'}}
+        )
+        if not student:
+            print(f"[ATTENDANCE_TOOL] ❌ Student not found: {student_id}")
+            return {"error": f"Student not found with ID: {student_id}"}
+        print(f"[ATTENDANCE_TOOL] ✅ Found student (internal ID: {student.id})")
+        
+        # Parse date or use today
+        date_obj = datetime.fromisoformat(date) if date else datetime.now()
+        print(f"[ATTENDANCE_TOOL] Using date: {date_obj}")
+        
+        # Find or create session for this course and date
+        print(f"[ATTENDANCE_TOOL] Looking for existing session...")
+        existing_sessions = await AttendanceService.get_course_sessions(course.id, date_obj, prisma)
+        
+        if existing_sessions:
+            session = existing_sessions[0]
+            print(f"[ATTENDANCE_TOOL] ✅ Found existing session: {session.id}")
+        else:
+            print(f"[ATTENDANCE_TOOL] No session found, creating new session...")
+            # Create new session
+            session_data = ClassSessionCreate(
+                courseId=course.id,
+                teacherId=course.teacherId or marked_by_id,
+                date=date_obj,
+                startTime="09:00 AM",
+                endTime="10:00 AM",
+                status="CONDUCTED",
+                topic=f"{course.courseName} - {date_obj.strftime('%Y-%m-%d')}"
+            )
+            session = await AttendanceService.create_class_session(session_data, prisma)
+            print(f"[ATTENDANCE_TOOL] ✅ Created new session: {session.id}")
+        
+        # Mark attendance
+        attendance_data = StudentAttendanceCreate(
+            sessionId=session.id,
+            studentId=student.id,
+            status=status,
+            remarks=remarks
+        )
+        
+        attendance_record = await AttendanceService.mark_attendance(
+            attendance_data, 
+            marked_by_id or session.teacherId, 
+            prisma
+        )
+        print(f"[ATTENDANCE_TOOL] ✅ Marked attendance: {attendance_record.id}")
         return StudentAttendanceRead.model_validate(attendance_record).model_dump()
     except Exception as e:
+        print(f"[ATTENDANCE_TOOL] ❌ Failed to mark attendance: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return {"error": f"Failed to mark attendance: {str(e)}"}
 
 
 @tool
-async def bulk_mark_student_attendance(attendance_list: List[StudentAttendanceCreate], marked_by_id: str):
+async def bulk_mark_student_attendance(
+    course_code: str,
+    student_attendance_list: List[dict],
+    date: Optional[str] = None,
+    marked_by_id: Optional[str] = None
+):
     """
     Mark attendance for multiple students at once in a class session.
+    The session will be automatically found or created based on the course and date.
 
     Args:
-        attendance_list (List[StudentAttendanceCreate]): List of attendance records to create.
-        marked_by_id (str): ID of the teacher/admin marking the attendance. (required)
+        course_code (str): Course code (e.g., 'CS101', 'MATH201'). (required)
+        student_attendance_list (List[dict]): List of student attendance records. Each dict should have:
+            - studentId (str): Student ID (e.g., 'S001', 'S002'). (required)
+            - status (str): Attendance status (PRESENT, ABSENT, LATE, EXCUSED). (required)
+            - remarks (Optional[str]): Additional remarks. (optional)
+        date (Optional[str]): Date of the class (YYYY-MM-DD). If not provided, uses today's date. (optional)
+        marked_by_id (Optional[str]): ID of the teacher/admin marking the attendance. (optional)
     """
+    print(f"[ATTENDANCE_TOOL] bulk_mark_student_attendance: course_code={course_code}, students={len(student_attendance_list)}, date={date}")
     try:
-        records = await AttendanceService.bulk_mark_attendance(attendance_list, marked_by_id, prisma)
+        # Find course by course code
+        print(f"[ATTENDANCE_TOOL] Looking up course by code: {course_code}")
+        course = await prisma.course.find_first(
+            where={'courseCode': {'equals': course_code, 'mode': 'insensitive'}},
+            include={'teacher': True}
+        )
+        if not course:
+            print(f"[ATTENDANCE_TOOL] ❌ Course not found: {course_code}")
+            return {"error": f"Course not found with code: {course_code}"}
+        print(f"[ATTENDANCE_TOOL] ✅ Found course: {course.courseName} (ID: {course.id})")
+        
+        # Parse date or use today
+        date_obj = datetime.fromisoformat(date) if date else datetime.now()
+        print(f"[ATTENDANCE_TOOL] Using date: {date_obj}")
+        
+        # Find or create session for this course and date
+        print(f"[ATTENDANCE_TOOL] Looking for existing session...")
+        existing_sessions = await AttendanceService.get_course_sessions(course.id, date_obj, prisma)
+        
+        if existing_sessions:
+            session = existing_sessions[0]
+            print(f"[ATTENDANCE_TOOL] ✅ Found existing session: {session.id}")
+        else:
+            print(f"[ATTENDANCE_TOOL] No session found, creating new session...")
+            # Create new session
+            session_data = ClassSessionCreate(
+                courseId=course.id,
+                teacherId=course.teacherId or marked_by_id,
+                date=date_obj,
+                startTime="09:00 AM",
+                endTime="10:00 AM",
+                status="CONDUCTED",
+                topic=f"{course.courseName} - {date_obj.strftime('%Y-%m-%d')}"
+            )
+            session = await AttendanceService.create_class_session(session_data, prisma)
+            print(f"[ATTENDANCE_TOOL] ✅ Created new session: {session.id}")
+        
+        # Lookup all student internal IDs
+        print(f"[ATTENDANCE_TOOL] Looking up student internal IDs...")
+        student_id_map = {}  # Map studentId -> internal UUID
+        for item in student_attendance_list:
+            student_id = item['studentId']
+            if student_id not in student_id_map:
+                student = await prisma.student.find_first(
+                    where={'studentId': {'equals': student_id, 'mode': 'insensitive'}}
+                )
+                if not student:
+                    print(f"[ATTENDANCE_TOOL] ⚠️ Student not found: {student_id}, skipping")
+                    continue
+                student_id_map[student_id] = student.id
+                print(f"[ATTENDANCE_TOOL] ✅ Found student {student_id} (internal ID: {student.id})")
+        
+        # Prepare attendance list with session ID and internal student IDs
+        attendance_list = []
+        for item in student_attendance_list:
+            student_id = item['studentId']
+            if student_id in student_id_map:
+                attendance_list.append(
+                    StudentAttendanceCreate(
+                        sessionId=session.id,
+                        studentId=student_id_map[student_id],
+                        status=item['status'],
+                        remarks=item.get('remarks')
+                    )
+                )
+        
+        print(f"[ATTENDANCE_TOOL] Marking bulk attendance for {len(attendance_list)} students...")
+        records = await AttendanceService.bulk_mark_attendance(
+            attendance_list, 
+            marked_by_id or session.teacherId, 
+            prisma
+        )
+        print(f"[ATTENDANCE_TOOL] ✅ Successfully marked attendance for {len(records)} students")
+        
         return {
             "message": f"Successfully marked attendance for {len(records)} students",
+            "session_id": session.id,
             "records": [StudentAttendanceRead.model_validate(r).model_dump() for r in records]
         }
     except Exception as e:
+        print(f"[ATTENDANCE_TOOL] ❌ Failed to bulk mark attendance: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return {"error": f"Failed to bulk mark attendance: {str(e)}"}
 
 
@@ -175,33 +347,69 @@ async def get_student_attendance_record(attendance_id: str):
 
 
 @tool
-async def get_course_attendance_records(course_id: str, date: Optional[str] = None):
+async def get_course_attendance_records(course_code: str, date: Optional[str] = None):
     """Get all attendance records for a course, optionally filtered by date.
     
     Args:
-        course_id: The unique identifier of the course
+        course_code: Course code (e.g., 'CS101', 'MATH201')
         date: Optional date filter in ISO format (YYYY-MM-DD)
     """
+    print(f"[ATTENDANCE_TOOL] get_course_attendance_records: course_code={course_code}, date={date}")
     try:
+        # Find course by course code
+        course = await prisma.course.find_first(
+            where={'courseCode': {'equals': course_code, 'mode': 'insensitive'}}
+        )
+        if not course:
+            print(f"[ATTENDANCE_TOOL] ❌ Course not found: {course_code}")
+            return {"error": f"Course not found with code: {course_code}"}
+        print(f"[ATTENDANCE_TOOL] ✅ Found course: {course.courseName} (ID: {course.id})")
+        
         date_obj = datetime.fromisoformat(date) if date else None
-        records = await AttendanceService.get_course_attendance(course_id, date_obj, prisma)
+        records = await AttendanceService.get_course_attendance(course.id, date_obj, prisma)
+        print(f"[ATTENDANCE_TOOL] ✅ Found {len(records)} attendance records")
         return [StudentAttendanceRead.model_validate(r).model_dump() for r in records]
     except Exception as e:
+        print(f"[ATTENDANCE_TOOL] ❌ Failed: {str(e)}")
         return {"error": f"Failed to get course attendance: {str(e)}"}
 
 
 @tool
-async def get_student_attendance_records(student_id: str, course_id: Optional[str] = None):
+async def get_student_attendance_records(student_id: str, course_code: Optional[str] = None):
     """Get all attendance records for a student, optionally filtered by course.
     
     Args:
-        student_id: The unique identifier of the student
-        course_id: Optional course ID to filter by specific course
+        student_id: Student ID (e.g., 'S001', 'S002')
+        course_code: Optional course code (e.g., 'CS101') to filter by specific course
     """
+    print(f"[ATTENDANCE_TOOL] get_student_attendance_records: student_id={student_id}, course_code={course_code}")
     try:
-        records = await AttendanceService.get_student_attendance(student_id, course_id, prisma)
+        # Find student by studentId
+        student = await prisma.student.find_first(
+            where={'studentId': {'equals': student_id, 'mode': 'insensitive'}}
+        )
+        if not student:
+            print(f"[ATTENDANCE_TOOL] ❌ Student not found: {student_id}")
+            return {"error": f"Student not found with ID: {student_id}"}
+        print(f"[ATTENDANCE_TOOL] ✅ Found student (internal ID: {student.id})")
+        
+        # Find course if provided
+        course_internal_id = None
+        if course_code:
+            course = await prisma.course.find_first(
+                where={'courseCode': {'equals': course_code, 'mode': 'insensitive'}}
+            )
+            if not course:
+                print(f"[ATTENDANCE_TOOL] ❌ Course not found: {course_code}")
+                return {"error": f"Course not found with code: {course_code}"}
+            course_internal_id = course.id
+            print(f"[ATTENDANCE_TOOL] ✅ Found course: {course.courseName} (ID: {course.id})")
+        
+        records = await AttendanceService.get_student_attendance(student.id, course_internal_id, prisma)
+        print(f"[ATTENDANCE_TOOL] ✅ Found {len(records)} attendance records")
         return [StudentAttendanceRead.model_validate(r).model_dump() for r in records]
     except Exception as e:
+        print(f"[ATTENDANCE_TOOL] ❌ Failed: {str(e)}")
         return {"error": f"Failed to get student attendance: {str(e)}"}
 
 
@@ -292,17 +500,41 @@ async def get_teacher_attendance_record(attendance_id: str):
 
 
 @tool
-async def get_teacher_attendance_records(teacher_id: str, course_id: Optional[str] = None):
+async def get_teacher_attendance_records(teacher_id: str, course_code: Optional[str] = None):
     """Get all attendance records for a teacher, optionally filtered by course.
     
     Args:
-        teacher_id: The unique identifier of the teacher
-        course_id: Optional course ID to filter by specific course
+        teacher_id: Teacher ID (e.g., 'T001', 'T002')
+        course_code: Optional course code (e.g., 'CS101') to filter by specific course
     """
+    print(f"[ATTENDANCE_TOOL] get_teacher_attendance_records: teacher_id={teacher_id}, course_code={course_code}")
     try:
-        records = await AttendanceService.get_teacher_attendance(teacher_id, course_id, prisma)
+        # Find teacher by teacherId
+        teacher = await prisma.teacher.find_first(
+            where={'teacherId': {'equals': teacher_id, 'mode': 'insensitive'}}
+        )
+        if not teacher:
+            print(f"[ATTENDANCE_TOOL] ❌ Teacher not found: {teacher_id}")
+            return {"error": f"Teacher not found with ID: {teacher_id}"}
+        print(f"[ATTENDANCE_TOOL] ✅ Found teacher (internal ID: {teacher.id})")
+        
+        # Find course if provided
+        course_internal_id = None
+        if course_code:
+            course = await prisma.course.find_first(
+                where={'courseCode': {'equals': course_code, 'mode': 'insensitive'}}
+            )
+            if not course:
+                print(f"[ATTENDANCE_TOOL] ❌ Course not found: {course_code}")
+                return {"error": f"Course not found with code: {course_code}"}
+            course_internal_id = course.id
+            print(f"[ATTENDANCE_TOOL] ✅ Found course: {course.courseName} (ID: {course.id})")
+        
+        records = await AttendanceService.get_teacher_attendance(teacher.id, course_internal_id, prisma)
+        print(f"[ATTENDANCE_TOOL] ✅ Found {len(records)} attendance records")
         return [TeacherAttendanceRead.model_validate(r).model_dump() for r in records]
     except Exception as e:
+        print(f"[ATTENDANCE_TOOL] ❌ Failed: {str(e)}")
         return {"error": f"Failed to get teacher attendance: {str(e)}"}
 
 
