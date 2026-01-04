@@ -36,6 +36,53 @@ export interface TeacherCourseAttendance {
   averageAttendancePercentage: number;
 }
 
+export interface ClassSessionCreate {
+  courseId: string;
+  scheduleId?: string;
+  teacherId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  room?: string;
+  topic?: string;
+  status: "SCHEDULED" | "CONDUCTED" | "CANCELLED" | "POSTPONED";
+  notes?: string;
+}
+
+export interface StudentAttendanceInput {
+  sessionId: string;
+  studentId: string;
+  status: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
+  remarks?: string;
+}
+
+export interface ClassSession {
+  id: string;
+  courseId: string;
+  scheduleId?: string;
+  teacherId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  room?: string;
+  topic?: string;
+  status: string;
+  notes?: string;
+}
+
+export interface Schedule {
+  id: string;
+  courseId: string;
+  teacherId: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  room: string;
+  building?: string;
+  type: string;
+  isActive: boolean;
+}
+
 export const useAttendanceService = () => {
   const api = useApiClient();
 
@@ -67,6 +114,25 @@ export const useAttendanceService = () => {
     // Get detailed attendance records for a specific course
     getCourseAttendance: async (courseId: string) => {
       return api.get(`/attendance/course/${courseId}`);
+    },
+
+    // Get schedules for a course
+    getCourseSchedules: async (courseId: string): Promise<Schedule[]> => {
+      return api.get(`/schedules?courseId=${courseId}`);
+    },
+
+    // Create a class session
+    createClassSession: async (
+      session: ClassSessionCreate
+    ): Promise<ClassSession> => {
+      return api.post("/attendance/sessions", session);
+    },
+
+    // Mark bulk attendance for multiple students
+    markBulkAttendance: async (
+      attendanceList: StudentAttendanceInput[]
+    ): Promise<any[]> => {
+      return api.post("/attendance/bulk", attendanceList);
     },
   };
 };

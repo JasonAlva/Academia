@@ -8,6 +8,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 import {
   Table,
@@ -49,6 +52,11 @@ interface DepartmentFormData {
   description?: string;
 }
 
+interface FormErrors {
+  name?: string;
+  code?: string;
+}
+
 export default function DepartmentsPage() {
   const {
     getAll: getDepartments,
@@ -72,10 +80,12 @@ export default function DepartmentsPage() {
   const [departmentToDelete, setDepartmentToDelete] = useState<string | null>(
     null
   );
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const [formData, setFormData] = useState<DepartmentFormData>({
     name: "",
     code: "",
+    description: "",
   });
 
   useEffect(() => {
@@ -100,19 +110,89 @@ export default function DepartmentsPage() {
     setFormData({
       name: "",
       code: "",
+      description: "",
     });
+    setErrors({});
+  };
+
+  // Validation functions
+  const validateName = (name: string): string | undefined => {
+    if (!name.trim()) return "Department name is required";
+    if (name.trim().length < 2)
+      return "Department name must be at least 2 characters";
+    if (!/^[a-zA-Z\s]+$/.test(name.trim()))
+      return "Department name must contain only letters and spaces";
+    return undefined;
+  };
+
+  const validateCode = (code: string): string | undefined => {
+    if (!code.trim()) return "Department code is required";
+    if (code.trim().length < 2)
+      return "Department code must be at least 2 characters";
+    if (!/^[A-Z0-9]+$/.test(code.trim()))
+      return "Department code must contain only uppercase letters and numbers";
+    return undefined;
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    newErrors.name = validateName(formData.name);
+    newErrors.code = validateCode(formData.code);
+
+    // Filter out undefined errors
+    const filteredErrors = Object.entries(newErrors).reduce(
+      (acc, [key, value]) => {
+        if (value) acc[key as keyof FormErrors] = value;
+        return acc;
+      },
+      {} as FormErrors
+    );
+
+    setErrors(filteredErrors);
+    return Object.keys(filteredErrors).length === 0;
+  };
+
+  const clearError = (field: keyof FormErrors) => {
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[field];
+      return newErrors;
+    });
+  };
+
+  const handleAlphabetInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow only letters and spaces
+    if (value === "" || /^[a-zA-Z\s]*$/.test(value)) {
+      return value;
+    }
+    return formData.name;
+  };
+
+  const handleCodeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toUpperCase();
+    // Allow only uppercase letters and numbers
+    if (value === "" || /^[A-Z0-9]*$/.test(value)) {
+      return value;
+    }
+    return formData.code;
   };
 
   const handleCreate = async () => {
     try {
-      if (!formData.name || !formData.code) {
-        toast.error("Please fill in all required fields");
+      // Validate form
+      if (!validateForm()) {
+        toast.error("Validation failed", {
+          description: "Please fix the errors in the form",
+        });
         return;
       }
 
       const createData: DepartmentCreate = {
         name: formData.name,
         code: formData.code,
+        description: formData.description,
       };
 
       await create(createData);
@@ -132,7 +212,9 @@ export default function DepartmentsPage() {
     setFormData({
       name: department.name,
       code: department.code,
+      description: department.description || "",
     });
+    setErrors({});
     setShowEditDialog(true);
   };
 
@@ -140,9 +222,18 @@ export default function DepartmentsPage() {
     if (!selectedDepartment) return;
 
     try {
+      // Validate form
+      if (!validateForm()) {
+        toast.error("Validation failed", {
+          description: "Please fix the errors in the form",
+        });
+        return;
+      }
+
       const updateData: DepartmentUpdate = {
         name: formData.name,
         code: formData.code,
+        description: formData.description,
       };
 
       await update(selectedDepartment.id, updateData);
@@ -307,6 +398,14 @@ export default function DepartmentsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {Object.keys(errors).length > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Please fix the errors below before submitting.
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-2">
               <Label htmlFor="name">
                 Department Name <span className="text-red-500">*</span>
@@ -315,10 +414,16 @@ export default function DepartmentsPage() {
                 id="name"
                 placeholder="e.g., Computer Science"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => {
+                  const newValue = handleAlphabetInput(e);
+                  setFormData({ ...formData, name: newValue });
+                  clearError("name");
+                }}
+                className={errors.name ? "border-red-500" : ""}
               />
+              {errors.name && (
+                <p className="text-sm text-red-500">{errors.name}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -329,11 +434,27 @@ export default function DepartmentsPage() {
                 id="code"
                 placeholder="e.g., CS"
                 value={formData.code}
+                onChange={(e) => {
+                  const newValue = handleCodeInput(e);
+                  setFormData({ ...formData, code: newValue });
+                  clearError("code");
+                }}
+                className={errors.code ? "border-red-500" : ""}
+              />
+              {errors.code && (
+                <p className="text-sm text-red-500">{errors.code}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description (Optional)</Label>
+              <Textarea
+                id="description"
+                placeholder="Department description..."
+                rows={3}
+                value={formData.description}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    code: e.target.value.toUpperCase(),
-                  })
+                  setFormData({ ...formData, description: e.target.value })
                 }
               />
             </div>
@@ -361,6 +482,14 @@ export default function DepartmentsPage() {
             <DialogDescription>Update department information</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {Object.keys(errors).length > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Please fix the errors below before submitting.
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-2">
               <Label htmlFor="edit-name">
                 Department Name <span className="text-red-500">*</span>
@@ -369,10 +498,16 @@ export default function DepartmentsPage() {
                 id="edit-name"
                 placeholder="e.g., Computer Science"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => {
+                  const newValue = handleAlphabetInput(e);
+                  setFormData({ ...formData, name: newValue });
+                  clearError("name");
+                }}
+                className={errors.name ? "border-red-500" : ""}
               />
+              {errors.name && (
+                <p className="text-sm text-red-500">{errors.name}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -383,11 +518,27 @@ export default function DepartmentsPage() {
                 id="edit-code"
                 placeholder="e.g., CS"
                 value={formData.code}
+                onChange={(e) => {
+                  const newValue = handleCodeInput(e);
+                  setFormData({ ...formData, code: newValue });
+                  clearError("code");
+                }}
+                className={errors.code ? "border-red-500" : ""}
+              />
+              {errors.code && (
+                <p className="text-sm text-red-500">{errors.code}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description (Optional)</Label>
+              <Textarea
+                id="edit-description"
+                placeholder="Department description..."
+                rows={3}
+                value={formData.description}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    code: e.target.value.toUpperCase(),
-                  })
+                  setFormData({ ...formData, description: e.target.value })
                 }
               />
             </div>

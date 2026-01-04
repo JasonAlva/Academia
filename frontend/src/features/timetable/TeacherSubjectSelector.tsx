@@ -13,7 +13,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, BookOpen, DoorOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  User,
+  BookOpen,
+  DoorOpen,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { timetableService } from "../../services/timeTableService";
 import type { Teacher, Subject, SubjectsDetailsList } from "./types";
 
@@ -33,7 +39,9 @@ export default function TeacherSubjectSelector({
   // Data state
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [subjectsDetails, setSubjectsDetails] = useState<SubjectsDetailsList>({});
+  const [subjectsDetails, setSubjectsDetails] = useState<SubjectsDetailsList>(
+    {}
+  );
   const [loading, setLoading] = useState(false);
 
   // Selection state
@@ -110,27 +118,31 @@ export default function TeacherSubjectSelector({
         timetableService.getSubjectsList(),
         timetableService.getSubjectsDetailsList(),
       ]);
-      
+
       console.log("Raw teachers data:", teachersData);
       console.log("Raw subjects data:", subjectsData);
       console.log("Raw details data:", detailsData);
 
       // Map teachers to expected format (handle nested user object)
-      const mappedTeachers: Teacher[] = (teachersData || []).map((teacher: any) => ({
-        id: teacher.id,
-        name: teacher.user?.name || teacher.name || "Unknown",
-        department: teacher.department,
-        email: teacher.user?.email || teacher.email,
-      }));
+      const mappedTeachers: Teacher[] = (teachersData || []).map(
+        (teacher: any) => ({
+          id: teacher.id,
+          name: teacher.user?.name || teacher.name || "Unknown",
+          department: teacher.department,
+          email: teacher.user?.email || teacher.email,
+        })
+      );
 
       // Map subjects/courses to expected format
-      const mappedSubjects: Subject[] = (subjectsData || []).map((course: any) => ({
-        id: course.id,
-        name: course.courseName || course.name,
-        code: course.courseCode || course.code,
-        credits: course.credits,
-        department_id: course.departmentId || course.department_id,
-      }));
+      const mappedSubjects: Subject[] = (subjectsData || []).map(
+        (course: any) => ({
+          id: course.id,
+          name: course.courseName || course.name,
+          code: course.courseCode || course.code,
+          credits: course.credits,
+          department_id: course.departmentId || course.department_id,
+        })
+      );
 
       console.log("Mapped teachers:", mappedTeachers);
       console.log("Mapped subjects:", mappedSubjects);
@@ -184,9 +196,8 @@ export default function TeacherSubjectSelector({
 
   const handleSubmit = () => {
     if (selectedTeachers.length > 0 && selectedCourse && roomNumber.trim()) {
-      const course = uniqueSubjects.find((s) => s.code === selectedCourse);
-      const courseName = course ? course.name : selectedCourse;
-      onSelect(selectedTeachers, courseName, roomNumber.trim());
+      // Pass the course CODE, not the course name
+      onSelect(selectedTeachers, selectedCourse, roomNumber.trim());
       resetSelection();
       onOpenChange(false);
     }
@@ -350,7 +361,9 @@ export default function TeacherSubjectSelector({
                 ) : (
                   <div className="space-y-2">
                     {availableTeachers.map((teacher) => {
-                      const isSelected = selectedTeachers.includes(teacher.name);
+                      const isSelected = selectedTeachers.includes(
+                        teacher.name
+                      );
                       return (
                         <Badge
                           key={teacher.id}

@@ -15,6 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { User } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -51,6 +53,39 @@ import {
   type Department,
 } from "@/services/departmentService";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+
+interface FormErrors {
+  name?: string;
+  teacherId?: string;
+  email?: string;
+  password?: string;
+  department?: string;
+  designation?: string;
+  phoneNumber?: string;
+  officeRoom?: string;
+}
+
+interface TeacherFormData {
+  teacherId?: string;
+  userId?: string;
+  department?: string;
+  designation?: string;
+  specialization?: string;
+  phoneNumber?: string;
+  officeRoom?: string;
+  officeHours?: string;
+  name?: string;
+  email?: string;
+  password?: string;
+  user?: {
+    name: string;
+    role: string;
+    email: string;
+    id: string;
+  };
+}
 
 export default function TeachersPage() {
   const {
@@ -73,8 +108,9 @@ export default function TeachersPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState<string | null>(null);
+  const [errors, setErrors] = useState<FormErrors>({});
 
-  const [formData, setFormData] = useState<Partial<Teacher>>({
+  const [formData, setFormData] = useState<TeacherFormData>({
     teacherId: "",
     userId: " ",
     department: "",
@@ -118,6 +154,139 @@ export default function TeachersPage() {
       },
     });
     setTeacherToUpdateId(null);
+    setErrors({});
+  };
+
+  // Validation functions
+  const validateName = (name: string): string | undefined => {
+    if (!name.trim()) return "Name is required";
+    if (name.trim().length < 2) return "Name must be at least 2 characters";
+    if (!/^[a-zA-Z\s]+$/.test(name.trim()))
+      return "Name must contain only letters and spaces";
+    return undefined;
+  };
+
+  const validateTeacherId = (id: string): string | undefined => {
+    if (!id.trim()) return "Teacher ID is required";
+    if (!/^[A-Z0-9]+$/i.test(id.trim()))
+      return "Teacher ID must contain only letters and numbers";
+    return undefined;
+  };
+
+  const validateEmail = (email: string): string | undefined => {
+    if (!email.trim()) return "Email is required";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    return undefined;
+  };
+
+  const validatePassword = (password: string): string | undefined => {
+    if (!password) return "Password is required";
+    if (password.length < 6) return "Password must be at least 6 characters";
+    return undefined;
+  };
+
+  const validateDepartment = (dept: string): string | undefined => {
+    if (!dept) return "Department is required";
+    return undefined;
+  };
+
+  const validateDesignation = (designation: string): string | undefined => {
+    if (!designation.trim()) return "Designation is required";
+    return undefined;
+  };
+
+  const validatePhoneNumber = (phone?: string): string | undefined => {
+    if (phone && !/^[0-9+\-\s()]+$/.test(phone))
+      return "Phone number can only contain numbers and + - ( ) characters";
+    return undefined;
+  };
+
+  const validateOfficeRoom = (room?: string): string | undefined => {
+    if (room && !/^[A-Z0-9\s]+$/i.test(room))
+      return "Office room must contain only letters and numbers";
+    return undefined;
+  };
+
+  const validateCreateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    newErrors.name = validateName(formData.name || "");
+    newErrors.teacherId = validateTeacherId(formData.teacherId || "");
+    newErrors.email = validateEmail(formData.email || "");
+    newErrors.password = validatePassword(formData.password || "");
+    newErrors.department = validateDepartment(formData.department || "");
+    newErrors.designation = validateDesignation(formData.designation || "");
+    newErrors.phoneNumber = validatePhoneNumber(formData.phoneNumber);
+    newErrors.officeRoom = validateOfficeRoom(formData.officeRoom);
+
+    const filteredErrors = Object.entries(newErrors).reduce(
+      (acc, [key, value]) => {
+        if (value) acc[key as keyof FormErrors] = value;
+        return acc;
+      },
+      {} as FormErrors
+    );
+
+    setErrors(filteredErrors);
+    return Object.keys(filteredErrors).length === 0;
+  };
+
+  const validateUpdateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    newErrors.department = validateDepartment(formData.department || "");
+    newErrors.designation = validateDesignation(formData.designation || "");
+    newErrors.phoneNumber = validatePhoneNumber(formData.phoneNumber);
+    newErrors.officeRoom = validateOfficeRoom(formData.officeRoom);
+
+    const filteredErrors = Object.entries(newErrors).reduce(
+      (acc, [key, value]) => {
+        if (value) acc[key as keyof FormErrors] = value;
+        return acc;
+      },
+      {} as FormErrors
+    );
+
+    setErrors(filteredErrors);
+    return Object.keys(filteredErrors).length === 0;
+  };
+
+  const clearError = (field: keyof FormErrors) => {
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[field];
+      return newErrors;
+    });
+  };
+
+  const handleAlphabetInput = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ): string => {
+    const value = e.target.value;
+    if (value === "" || /^[a-zA-Z\s]*$/.test(value)) {
+      return value;
+    }
+    return formData.name || "";
+  };
+
+  const handleAlphanumericInput = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    currentValue: string
+  ): string => {
+    const value = e.target.value;
+    if (value === "" || /^[A-Z0-9\s]*$/i.test(value)) {
+      return value;
+    }
+    return currentValue;
+  };
+
+  const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>): string => {
+    const value = e.target.value;
+    if (value === "" || /^[0-9+\-\s()]*$/.test(value)) {
+      return value;
+    }
+    return formData.phoneNumber || "";
   };
 
   const fetchTeachers = async () => {
@@ -135,15 +304,10 @@ export default function TeachersPage() {
   };
   const handleCreateTeacher = async () => {
     try {
-      if (
-        !formData.name ||
-        !formData.teacherId ||
-        !formData.department ||
-        !formData.designation ||
-        !formData.email ||
-        !formData.password
-      ) {
-        toast.error("Please fill in all required fields");
+      if (!validateCreateForm()) {
+        toast.error("Validation failed", {
+          description: "Please fix the errors in the form",
+        });
         return;
       }
 
@@ -182,6 +346,9 @@ export default function TeachersPage() {
       specialization: teacher.specialization || "",
       phoneNumber: teacher.phoneNumber || "",
       officeRoom: teacher.officeRoom || "",
+      officeHours: teacher.officeHours || "",
+      name: teacher.user?.name || "",
+      email: teacher.user?.email || "",
       user: {
         name: teacher.user!.name,
         role: teacher.user!.role,
@@ -189,6 +356,7 @@ export default function TeachersPage() {
         id: teacher.user!.id,
       },
     });
+    setErrors({});
     setShowEditDialog(true);
   };
 
@@ -206,13 +374,15 @@ export default function TeachersPage() {
     if (!teacherToUpdateId) {
       return;
     }
-    if (!formData.teacherId || !formData.department || !formData.designation) {
-      toast.error("Please fill in all required fields");
+    if (!validateUpdateForm()) {
+      toast.error("Validation failed", {
+        description: "Please fix the errors in the form",
+      });
       return;
     }
     const updateDataTeacher: TeacherUpdate = {
-      department: formData.department,
-      designation: formData.designation,
+      department: formData.department!,
+      designation: formData.designation!,
       specialization: formData.specialization,
       phoneNumber: formData.phoneNumber,
       officeRoom: formData.officeRoom,
@@ -343,14 +513,8 @@ export default function TeachersPage() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar>
-                          <AvatarImage
-                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${teacher.user?.email}`}
-                          />
-                          <AvatarFallback>
-                            {teacher.user?.name
-                              ?.split(" ")
-                              .map((n: string) => n[0])
-                              .join("") || "??"}
+                          <AvatarFallback className="bg-muted flex items-center justify-center">
+                            <User className="h-5 w-5 text-muted-foreground" />
                           </AvatarFallback>
                         </Avatar>
                         <div>
@@ -415,6 +579,14 @@ export default function TeachersPage() {
             <DialogDescription>Update Teacher information</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {Object.keys(errors).length > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Please fix the errors below before submitting.
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-2">
               <Label htmlFor="edit-teacherId">Teacher ID</Label>
               <Input
@@ -450,11 +622,15 @@ export default function TeachersPage() {
               </Label>
               <Select
                 value={formData.department}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, department: value })
-                }
+                onValueChange={(value) => {
+                  setFormData({ ...formData, department: value });
+                  clearError("department");
+                }}
               >
-                <SelectTrigger id="edit-department">
+                <SelectTrigger
+                  id="edit-department"
+                  className={errors.department ? "border-red-500" : ""}
+                >
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
@@ -465,6 +641,9 @@ export default function TeachersPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {errors.department && (
+                <p className="text-sm text-red-500">{errors.department}</p>
+              )}
             </div>
 
             {/* Batch */}
@@ -474,12 +653,17 @@ export default function TeachersPage() {
               </Label>
               <Input
                 id="edit-designation"
-                placeholder="e.g., 2021-2025"
+                placeholder="e.g., Professor"
                 value={formData.designation}
-                onChange={(e) =>
-                  setFormData({ ...formData, designation: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, designation: e.target.value });
+                  clearError("designation");
+                }}
+                className={errors.designation ? "border-red-500" : ""}
               />
+              {errors.designation && (
+                <p className="text-sm text-red-500">{errors.designation}</p>
+              )}
             </div>
 
             {/* Phone Number */}
@@ -489,10 +673,16 @@ export default function TeachersPage() {
                 id="edit-phone"
                 placeholder="e.g., +1234567890"
                 value={formData.phoneNumber || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, phoneNumber: e.target.value })
-                }
+                onChange={(e) => {
+                  const newValue = handlePhoneInput(e);
+                  setFormData({ ...formData, phoneNumber: newValue });
+                  clearError("phoneNumber");
+                }}
+                className={errors.phoneNumber ? "border-red-500" : ""}
               />
+              {errors.phoneNumber && (
+                <p className="text-sm text-red-500">{errors.phoneNumber}</p>
+              )}
             </div>
 
             {/* Address */}
@@ -515,10 +705,19 @@ export default function TeachersPage() {
                 id="edit-office-room"
                 placeholder="eg : IS102"
                 value={formData.officeRoom || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, officeRoom: e.target.value })
-                }
+                onChange={(e) => {
+                  const newValue = handleAlphanumericInput(
+                    e,
+                    formData.officeRoom || ""
+                  );
+                  setFormData({ ...formData, officeRoom: newValue });
+                  clearError("officeRoom");
+                }}
+                className={errors.officeRoom ? "border-red-500" : ""}
               />
+              {errors.officeRoom && (
+                <p className="text-sm text-red-500">{errors.officeRoom}</p>
+              )}
             </div>
             {/* Date of Birth */}
             <div className="space-y-2">
@@ -557,6 +756,14 @@ export default function TeachersPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {Object.keys(errors).length > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Please fix the errors below before submitting.
+                </AlertDescription>
+              </Alert>
+            )}
             {/* Teacher Name */}
             <div className="space-y-2">
               <Label htmlFor="name">
@@ -566,10 +773,16 @@ export default function TeachersPage() {
                 id="name"
                 placeholder="e.g., Dr. John Doe"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => {
+                  const newValue = handleAlphabetInput(e);
+                  setFormData({ ...formData, name: newValue });
+                  clearError("name");
+                }}
+                className={errors.name ? "border-red-500" : ""}
               />
+              {errors.name && (
+                <p className="text-sm text-red-500">{errors.name}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="teacherId">
@@ -579,10 +792,19 @@ export default function TeachersPage() {
                 id="teacherId"
                 placeholder="e.g., T001"
                 value={formData.teacherId}
-                onChange={(e) =>
-                  setFormData({ ...formData, teacherId: e.target.value })
-                }
+                onChange={(e) => {
+                  const newValue = handleAlphanumericInput(
+                    e,
+                    formData.teacherId || ""
+                  );
+                  setFormData({ ...formData, teacherId: newValue });
+                  clearError("teacherId");
+                }}
+                className={errors.teacherId ? "border-red-500" : ""}
               />
+              {errors.teacherId && (
+                <p className="text-sm text-red-500">{errors.teacherId}</p>
+              )}
             </div>
 
             {/* Department */}
@@ -592,11 +814,15 @@ export default function TeachersPage() {
               </Label>
               <Select
                 value={formData.department}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, department: value })
-                }
+                onValueChange={(value) => {
+                  setFormData({ ...formData, department: value });
+                  clearError("department");
+                }}
               >
-                <SelectTrigger id="department">
+                <SelectTrigger
+                  id="department"
+                  className={errors.department ? "border-red-500" : ""}
+                >
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
@@ -607,6 +833,9 @@ export default function TeachersPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {errors.department && (
+                <p className="text-sm text-red-500">{errors.department}</p>
+              )}
             </div>
 
             {/* Designation */}
@@ -618,10 +847,15 @@ export default function TeachersPage() {
                 id="designation"
                 placeholder="e.g., Professor, Assistant Professor"
                 value={formData.designation}
-                onChange={(e) =>
-                  setFormData({ ...formData, designation: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, designation: e.target.value });
+                  clearError("designation");
+                }}
+                className={errors.designation ? "border-red-500" : ""}
               />
+              {errors.designation && (
+                <p className="text-sm text-red-500">{errors.designation}</p>
+              )}
             </div>
 
             {/* Specialization */}
@@ -644,10 +878,16 @@ export default function TeachersPage() {
                 id="phoneNumber"
                 placeholder="e.g., +1234567890"
                 value={formData.phoneNumber || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, phoneNumber: e.target.value })
-                }
+                onChange={(e) => {
+                  const newValue = handlePhoneInput(e);
+                  setFormData({ ...formData, phoneNumber: newValue });
+                  clearError("phoneNumber");
+                }}
+                className={errors.phoneNumber ? "border-red-500" : ""}
               />
+              {errors.phoneNumber && (
+                <p className="text-sm text-red-500">{errors.phoneNumber}</p>
+              )}
             </div>
 
             {/* Office Room */}
@@ -657,10 +897,19 @@ export default function TeachersPage() {
                 id="officeRoom"
                 placeholder="e.g., IS102"
                 value={formData.officeRoom || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, officeRoom: e.target.value })
-                }
+                onChange={(e) => {
+                  const newValue = handleAlphanumericInput(
+                    e,
+                    formData.officeRoom || ""
+                  );
+                  setFormData({ ...formData, officeRoom: newValue });
+                  clearError("officeRoom");
+                }}
+                className={errors.officeRoom ? "border-red-500" : ""}
               />
+              {errors.officeRoom && (
+                <p className="text-sm text-red-500">{errors.officeRoom}</p>
+              )}
             </div>
 
             {/* Email */}
@@ -673,10 +922,15 @@ export default function TeachersPage() {
                 type="email"
                 placeholder="e.g., example@domain.com"
                 value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value });
+                  clearError("email");
+                }}
+                className={errors.email ? "border-red-500" : ""}
               />
+              {errors.email && (
+                <p className="text-sm text-red-500">{errors.email}</p>
+              )}
             </div>
 
             {/* Password */}
@@ -689,10 +943,15 @@ export default function TeachersPage() {
                 type="password"
                 placeholder="Enter password"
                 value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, password: e.target.value });
+                  clearError("password");
+                }}
+                className={errors.password ? "border-red-500" : ""}
               />
+              {errors.password && (
+                <p className="text-sm text-red-500">{errors.password}</p>
+              )}
             </div>
           </div>
 
@@ -726,17 +985,12 @@ export default function TeachersPage() {
           {selectedTeacher && (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedTeacher.user?.email}`}
-                  />
-                  <AvatarFallback>
-                    {selectedTeacher.user?.name
-                      ?.split(" ")
-                      .map((n) => n[0])
-                      .join("") || "??"}
+                <Avatar>
+                  <AvatarFallback className="bg-muted flex items-center justify-center">
+                    <User className="h-5 w-5 text-muted-foreground" />
                   </AvatarFallback>
                 </Avatar>
+
                 <div>
                   <h3 className="text-lg font-semibold">
                     {selectedTeacher.user?.name}

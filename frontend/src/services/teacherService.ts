@@ -6,6 +6,7 @@ export interface Teacher {
   teacherId: string;
   department: string;
   designation: string;
+
   specialization?: string;
   phoneNumber?: string;
   officeRoom?: string;
@@ -46,8 +47,14 @@ export const useTeacherService = () => {
     getById: async (id: string): Promise<Teacher> =>
       apiClient.get(`/teachers/${id}`),
 
+    getByUserId: async (user_id: string): Promise<Teacher> =>
+      apiClient.get(`/teachers/userId/${user_id}`),
+
     getCoursesWithStudents: async (teacherId: string) =>
       apiClient.get(`/teachers/${teacherId}/courses-with-students`),
+
+    getStudentsWithCourse: async (teacherId: string, course_id: string) =>
+      apiClient.get(`/teachers/${teacherId}/students?course_id=${course_id}`),
 
     create: async (data: Partial<Teacher>): Promise<Teacher> =>
       apiClient.post("/teachers", data),

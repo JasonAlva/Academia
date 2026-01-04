@@ -58,18 +58,52 @@ async def list_all_courses():
 
 
 @tool
-async def get_course_by_id(course_id: str):
-    """Get a specific course by its ID.
+async def get_course_by_id(course_id: str = None, course_code: str = None, course_name: str = None):
+    """Get a specific course by its ID, course code, or course name.
     Returns detailed course information including teacher and department details.
+    You can search by any of these parameters - the tool will find the course.
     
     Args:
-        course_id: The unique identifier of the course
+        course_id: The unique identifier of the course (optional)
+        course_code: The course code (e.g., "CS101", "MATH201") (optional)
+        course_name: The full or partial course name (e.g., "Data Structures") (optional)
+    
+    Examples:
+        - "Get course CS101" → Use course_code="CS101"
+        - "Show me Data Structures course" → Use course_name="Data Structures"
+        - "Find Database course" → Use course_name="Database"
     """
     service = CourseService(prisma)
-    course = await service.get_course_by_id(course_id)
+    
+    # Try to find course by provided parameter
+    course = None
+    
+    if course_id:
+        course = await service.get_course_by_id(course_id)
+    elif course_code:
+        # Search by course code
+        course = await prisma.course.find_first(
+            where={"courseCode": {"equals": course_code, "mode": "insensitive"}},
+            include={
+                "teacher": {"include": {"user": True}},
+                "department": True
+            }
+        )
+    elif course_name:
+        # Search by course name (case-insensitive partial match)
+        course = await prisma.course.find_first(
+            where={"courseName": {"contains": course_name, "mode": "insensitive"}},
+            include={
+                "teacher": {"include": {"user": True}},
+                "department": True
+            }
+        )
+    else:
+        return {"error": "Please provide either course_id, course_code, or course_name"}
     
     if not course:
-        return {"error": "Course not found"}
+        search_param = course_code or course_name or course_id
+        return {"error": f"Course not found with: {search_param}"}
     
     course_data = {
         "id": course.id,
@@ -141,11 +175,14 @@ async def create_new_course(course: CourseCreate):
 
 
 @tool
-async def update_existing_course(course_id: str, course: CourseUpdate):
+async def update_existing_course(course_id: str = None, course_code: str = None, course_name: str = None, course: CourseUpdate = None):
     """Update an existing course's information.
+    You can identify the course by ID, course code, or course name.
     
     Args:
-        course_id (str): The unique ID of the course to update. (required)
+        course_id (str): The unique ID of the course to update. (optional)
+        course_code (str): The course code to find the course (e.g., "CS101"). (optional)
+        course_name (str): The course name to find the course (e.g., "Data Structures"). (optional)
         course (CourseUpdate): An object containing the fields to update. All fields are optional:
             - course_code (Optional[str]): Updated course code. (optional)
             - course_name (Optional[str]): Updated course name. (optional)
@@ -156,12 +193,39 @@ async def update_existing_course(course_id: str, course: CourseUpdate):
             - syllabus (Optional[str]): Updated syllabus. (optional)
             - max_students (Optional[int]): Updated max students. (optional)
             - is_active (Optional[bool]): Updated active status. (optional)
+    
+    Examples:
+        - "Update CS101 credits to 4" → Use course_code="CS101"
+        - "Change Data Structures description" → Use course_name="Data Structures"
     """
     service = CourseService(prisma)
+    
     try:
-        updated_course = await service.update_course(course_id, course)
+        # Find the course first
+        target_course = None
+        
+        if course_id:
+            target_course = await prisma.course.find_unique(where={"id": course_id})
+        elif course_code:
+            target_course = await prisma.course.find_first(
+                where={"courseCode": {"equals": course_code, "mode": "insensitive"}}
+            )
+        elif course_name:
+            target_course = await prisma.course.find_first(
+                where={"courseName": {"contains": course_name, "mode": "insensitive"}}
+            )
+        else:
+            return {"error": "Please provide either course_id, course_code, or course_name"}
+        
+        if not target_course:
+            search_param = course_code or course_name or course_id
+            return {"error": f"Course not found with: {search_param}"}
+        
+        # Update using the found course ID
+        updated_course = await service.update_course(target_course.id, course)
         if not updated_course:
             return {"error": "Course not found"}
+        
         # Fetch with relations for complete response
         complete_course = await service.get_course_by_id(updated_course.id)
         return CourseOut.model_validate(complete_course).model_dump()
@@ -170,21 +234,50 @@ async def update_existing_course(course_id: str, course: CourseUpdate):
 
 
 @tool
-async def delete_existing_course(course_id: str):
+async def delete_existing_course(course_id: str = None, course_code: str = None, course_name: str = None):
     """
     Delete a course from the database.
+    You can identify the course by ID, course code, or course name.
     Warning: This will also affect associated schedules and enrollments.
 
     Args:
-        course_id (str): The unique ID of the course to delete. (required)
+        course_id (str): The unique ID of the course to delete. (optional)
+        course_code (str): The course code to find the course (e.g., "CS101"). (optional)
+        course_name (str): The course name to find the course (e.g., "Data Structures"). (optional)
+    
+    Examples:
+        - "Delete course CS101" → Use course_code="CS101"
+        - "Remove Database course" → Use course_name="Database"
     """
     service = CourseService(prisma)
+    
     try:
-        deleted_course = await service.delete_course(course_id)
+        # Find the course first
+        target_course = None
+        
+        if course_id:
+            target_course = await prisma.course.find_unique(where={"id": course_id})
+        elif course_code:
+            target_course = await prisma.course.find_first(
+                where={"courseCode": {"equals": course_code, "mode": "insensitive"}}
+            )
+        elif course_name:
+            target_course = await prisma.course.find_first(
+                where={"courseName": {"contains": course_name, "mode": "insensitive"}}
+            )
+        else:
+            return {"error": "Please provide either course_id, course_code, or course_name"}
+        
+        if not target_course:
+            search_param = course_code or course_name or course_id
+            return {"error": f"Course not found with: {search_param}"}
+        
+        # Delete using the found course ID
+        deleted_course = await service.delete_course(target_course.id)
         if deleted_course:
             return {
                 "message": "Course deleted successfully",
-                "course_id": course_id,
+                "course_id": target_course.id,
                 "course_code": deleted_course.courseCode,
                 "course_name": deleted_course.courseName
             }

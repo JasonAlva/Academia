@@ -18,19 +18,25 @@ class AttendanceService:
     @staticmethod
     async def create_class_session(session: ClassSessionCreate, db: Prisma):
         """Create a new class session."""
+        # Build data dictionary conditionally
+        data = {
+            'course': {'connect': {'id': session.courseId}},
+            'teacher': {'connect': {'id': session.teacherId}},
+            'date': session.date,
+            'startTime': session.startTime,
+            'endTime': session.endTime,
+            'room': session.room,
+            'topic': session.topic,
+            'status': session.status,
+            'notes': session.notes
+        }
+        
+        # Only add schedule if provided
+        if session.scheduleId:
+            data['schedule'] = {'connect': {'id': session.scheduleId}}
+        
         class_session = await db.classsession.create(
-            data={
-                'course': {'connect': {'id': session.courseId}},
-                'schedule': {'connect': {'id': session.scheduleId}} if session.scheduleId else None,
-                'teacher': {'connect': {'id': session.teacherId}},
-                'date': session.date,
-                'startTime': session.startTime,
-                'endTime': session.endTime,
-                'room': session.room,
-                'topic': session.topic,
-                'status': session.status,
-                'notes': session.notes
-            },
+            data=data,
             include={
                 'course': True,
                 'teacher': {

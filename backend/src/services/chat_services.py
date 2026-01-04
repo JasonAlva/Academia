@@ -11,16 +11,14 @@ class ChatService:
         user_id: str, 
         role: str, 
         content: str, 
-        thread_id: Optional[str] = None, 
-        parent_id: Optional[str] = None
+        thread_id: Optional[str] = None
     ) -> ChatMessage:
         message = await self.db.chatmessage.create(
             data={
-                'user': {'connect': {'id': user_id}},
+                'userId': user_id,
                 'role': role,
                 'content': content,
                 'threadId': thread_id,
-                'parentId': parent_id,
             }
         )
         return message

@@ -191,6 +191,8 @@ export default function CoursePage() {
     if (!name.trim()) return "Course name is required";
     if (name.trim().length < 3)
       return "Course name must be at least 3 characters";
+    if (!/^[a-zA-Z\s]+$/.test(name.trim()))
+      return "Course name must contain only letters and spaces";
     return undefined;
   };
 
@@ -253,6 +255,30 @@ export default function CoursePage() {
       delete newErrors[field];
       return newErrors;
     });
+  };
+
+  const handleAlphabetInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow only letters and spaces
+    if (value === "" || /^[a-zA-Z\s]*$/.test(value)) {
+      return value;
+    }
+    return formData.courseName;
+  };
+
+  const handleNumericInput = (
+    value: string,
+    min: number,
+    max: number,
+    defaultValue: number
+  ): number => {
+    // Remove non-numeric characters
+    const numericValue = value.replace(/[^0-9]/g, "");
+    if (numericValue === "") return defaultValue;
+    const parsed = parseInt(numericValue);
+    if (parsed < min) return min;
+    if (parsed > max) return max;
+    return parsed;
   };
 
   const handleCreate = async () => {
@@ -574,15 +600,12 @@ export default function CoursePage() {
                 </Label>
                 <Input
                   id="credits"
-                  type="number"
-                  min="1"
-                  max="10"
+                  type="text"
+                  inputMode="numeric"
                   value={formData.credits}
                   onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      credits: parseInt(e.target.value) || 3,
-                    });
+                    const value = handleNumericInput(e.target.value, 1, 10, 3);
+                    setFormData({ ...formData, credits: value });
                     clearError("credits");
                   }}
                   className={errors.credits ? "border-red-500" : ""}
@@ -602,7 +625,8 @@ export default function CoursePage() {
                 placeholder="e.g., Introduction to Computer Science"
                 value={formData.courseName}
                 onChange={(e) => {
-                  setFormData({ ...formData, courseName: e.target.value });
+                  const newValue = handleAlphabetInput(e);
+                  setFormData({ ...formData, courseName: newValue });
                   clearError("courseName");
                 }}
                 className={errors.courseName ? "border-red-500" : ""}
@@ -697,14 +721,17 @@ export default function CoursePage() {
                 <Label htmlFor="maxStudents">Max Students</Label>
                 <Input
                   id="maxStudents"
-                  type="number"
-                  min="1"
+                  type="text"
+                  inputMode="numeric"
                   value={formData.maxStudents}
                   onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      maxStudents: parseInt(e.target.value) || 60,
-                    });
+                    const value = handleNumericInput(
+                      e.target.value,
+                      1,
+                      500,
+                      60
+                    );
+                    setFormData({ ...formData, maxStudents: value });
                     clearError("maxStudents");
                   }}
                   className={errors.maxStudents ? "border-red-500" : ""}
@@ -815,15 +842,12 @@ export default function CoursePage() {
                 </Label>
                 <Input
                   id="edit-credits"
-                  type="number"
-                  min="1"
-                  max="10"
+                  type="text"
+                  inputMode="numeric"
                   value={formData.credits}
                   onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      credits: parseInt(e.target.value) || 3,
-                    });
+                    const value = handleNumericInput(e.target.value, 1, 10, 3);
+                    setFormData({ ...formData, credits: value });
                     clearError("credits");
                   }}
                   className={errors.credits ? "border-red-500" : ""}
@@ -843,7 +867,8 @@ export default function CoursePage() {
                 placeholder="e.g., Introduction to Computer Science"
                 value={formData.courseName}
                 onChange={(e) => {
-                  setFormData({ ...formData, courseName: e.target.value });
+                  const newValue = handleAlphabetInput(e);
+                  setFormData({ ...formData, courseName: newValue });
                   clearError("courseName");
                 }}
                 className={errors.courseName ? "border-red-500" : ""}
@@ -938,14 +963,17 @@ export default function CoursePage() {
                 <Label htmlFor="edit-maxStudents">Max Students</Label>
                 <Input
                   id="edit-maxStudents"
-                  type="number"
-                  min="1"
+                  type="text"
+                  inputMode="numeric"
                   value={formData.maxStudents}
                   onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      maxStudents: parseInt(e.target.value) || 60,
-                    });
+                    const value = handleNumericInput(
+                      e.target.value,
+                      1,
+                      500,
+                      60
+                    );
+                    setFormData({ ...formData, maxStudents: value });
                     clearError("maxStudents");
                   }}
                   className={errors.maxStudents ? "border-red-500" : ""}

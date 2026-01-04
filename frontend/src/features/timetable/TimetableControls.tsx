@@ -73,8 +73,8 @@ export function TimetableControls({
             <SelectValue placeholder="Select semester" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="0">Semester 1</SelectItem>
-            <SelectItem value="1">Semester 2</SelectItem>
+            <SelectItem value="0">Odd Semester</SelectItem>
+            <SelectItem value="1">Even Semester </SelectItem>
           </SelectContent>
         </Select>
       </div>

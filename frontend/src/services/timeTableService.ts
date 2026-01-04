@@ -53,9 +53,10 @@ class TimetableService {
   }
 
   // Get the full schedule structure (semester -> section -> timetable)
-  async getSchedule(): Promise<FullTimeTable> {
+  async getSchedule(departmentId?: string): Promise<FullTimeTable> {
     const api = this.getApi();
-    return api.get("/schedules/timetable");
+    const params = departmentId ? `?departmentId=${departmentId}` : "";
+    return api.get(`/schedules/timetable${params}`);
   }
 
   // Get subjects details list with teacher and room info
@@ -68,13 +69,15 @@ class TimetableService {
   async saveSchedule(
     semester: number,
     section: number,
-    timetable: TimeTableType
+    timetable: TimeTableType,
+    departmentId?: string
   ): Promise<void> {
     const api = this.getApi();
     return api.post("/schedules/save", {
       semester,
       section,
       timetable,
+      departmentId,
     });
   }
 

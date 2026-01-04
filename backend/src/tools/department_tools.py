@@ -39,22 +39,29 @@ async def create_new_department(name: str,code:str):
     return {"id": dept.id, "name": dept.name, "code": dept.code, "message": "Department created successfully"}
 
 @tool
-async def update_existing_department( name: str, code: str ):
-    """Update an existing department's information.
+async def update_existing_department(code: str, name: str):
+    """Update an existing department's name based on its code.
     
     Args:
-       
-        name: New name for the department (optional)
-        location: New location for the department (optional)
+        code: The department code to identify which department to update (required)
+        name: New name for the department (required)
     """
     service = DepartmentService(prisma)
-    department=service.get_department_by_name(name)
-    department_id=department.id
-    dept_data = DepartmentUpdate(name=name, code=code)
-    dept = await service.update_department(department_id, dept_data)
-    if not dept:
-        return {"error": "Department not found"}
-    return {"id": dept.id, "name": dept.name, "code": dept.code, "message": "Department updated successfully"}
+    try:
+        department = await service.get_department_by_code(code)
+        if not department:
+            return {"error": f"Department with code '{code}' not found"}
+        
+        department_id = department.id
+        dept_data = DepartmentUpdate(name=name, code=code)
+        dept = await service.update_department(department_id, dept_data)
+        
+        if not dept:
+            return {"error": "Department could not be updated"}
+        
+        return {"id": dept.id, "name": dept.name, "code": dept.code, "message": f"Department '{code}' updated successfully with new name '{name}'"}
+    except Exception as e:
+        return {"error": f"Failed to update department: {str(e)}"}
 
 @tool
 async def delete_existing_department(department_code: str):

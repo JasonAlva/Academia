@@ -9,6 +9,7 @@ passlib[bcrypt]
 python-jose
 langchain
 langchain-core
+langchain-ollama
 langchain-google-genai
 typing_extensions
 requests

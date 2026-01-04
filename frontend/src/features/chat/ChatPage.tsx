@@ -12,6 +12,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [threadId, setThreadId] = useState<string | null>(null); // Track conversation thread
   const messagesRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -24,6 +25,7 @@ export default function ChatPage() {
     const userMsg: any = {
       // role: "user",
       query: input.trim(),
+      thread_id: threadId, // Include thread_id for conversation continuity
       // id: Date.now(),
     };
     const userMessg: Message = {
@@ -42,9 +44,19 @@ export default function ChatPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ query: userMsg.query }),
+        body: JSON.stringify({
+          query: userMsg.query,
+          thread_id: threadId, // Send thread_id to maintain conversation
+        }),
       });
       const data = await res.json();
+
+      // Save thread_id for conversation continuity
+      if (data.thread_id && !threadId) {
+        setThreadId(data.thread_id);
+        console.log("Started new conversation thread:", data.thread_id);
+      }
+
       const assistant: Message = {
         role: "assistant",
         query: data.answer || "No response",
@@ -75,8 +87,19 @@ export default function ChatPage() {
   return (
     <div className="flex-1 p-4 md:p-6 lg:p-8">
       <Card className="w-full min-h-[600px] flex flex-col">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Chat</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setMessages([]);
+              setThreadId(null);
+            }}
+            disabled={messages.length === 0}
+          >
+            New Conversation
+          </Button>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col p-0 ">
           <div

@@ -9,6 +9,7 @@ from src.models.schemas import (
     UserCreate
 )
 from src.config.database import prisma
+from fastapi import Depends
 
 
 @tool
@@ -116,3 +117,163 @@ async def delete_existing_teacher(teacher_id: str):
         return {"message": "Teacher deleted successfully", "teacher_id": teacher_id}
     except Exception as e:
         return {"error": f"Teacher not found or could not be deleted: {str(e)}"}
+
+
+@tool
+async def get_my_teacher_profile(user_id: str):
+    """
+    Get the current teacher's profile information.
+    This automatically uses the logged-in teacher's user ID.
+    
+    Args:
+        user_id: The user ID of the currently logged-in teacher (automatically provided)
+    """
+    try:
+        # Find teacher by user ID
+        teacher = await prisma.teacher.find_first(
+            where={'userId': user_id},
+            include={'user': True, 'department': True}
+        )
+        
+        if not teacher:
+            return {"error": "Teacher profile not found for current user"}
+        
+        return TeacherOut.model_validate(teacher).model_dump()
+    except Exception as e:
+        return {"error": f"Failed to get teacher profile: {str(e)}"}
+
+
+@tool
+async def get_teacher_courses(teacher_id: str):
+    """
+    Get all courses taught by a specific teacher.
+    
+    Args:
+        teacher_id: The unique identifier of the teacher
+    """
+    try:
+        courses = await prisma.course.find_many(
+            where={'teacherId': teacher_id},
+            include={'department': True}
+        )
+        
+        return {
+            "success": True,
+            "teacher_id": teacher_id,
+            "courses": [{
+                "id": c.id,
+                "courseCode": c.courseCode,
+                "courseName": c.courseName,
+                "credits": c.credits,
+                "semester": c.semester,
+                "department": c.department.name if c.department else None,
+                "maxStudents": c.maxStudents,
+                "isActive": c.isActive
+            } for c in courses],
+            "total_courses": len(courses)
+        }
+    except Exception as e:
+        return {"error": f"Failed to get teacher courses: {str(e)}"}
+
+
+@tool
+async def get_teacher_courses_with_students(teacher_id: str):
+    """
+    Get all courses taught by a teacher with enrolled student information.
+    
+    Args:
+        teacher_id: The unique identifier of the teacher
+    """
+    try:
+        courses = await prisma.course.find_many(
+            where={'teacherId': teacher_id},
+            include={
+                'department': True,
+                'enrollments': {
+                    'include': {
+                        'student': {
+                            'include': {'user': True}
+                        }
+                    }
+                }
+            }
+        )
+        
+        result = []
+        for course in courses:
+            course_data = {
+                "id": course.id,
+                "courseCode": course.courseCode,
+                "courseName": course.courseName,
+                "credits": course.credits,
+                "semester": course.semester,
+                "department": course.department.name if course.department else None,
+                "total_enrolled": len(course.enrollments),
+                "students": [{
+                    "id": e.student.id,
+                    "studentId": e.student.studentId,
+                    "name": e.student.user.name,
+                    "email": e.student.user.email,
+                    "status": e.status,
+                    "grade": e.grade
+                } for e in course.enrollments]
+            }
+            result.append(course_data)
+        
+        return {
+            "success": True,
+            "teacher_id": teacher_id,
+            "courses": result,
+            "total_courses": len(result)
+        }
+    except Exception as e:
+        return {"error": f"Failed to get teacher courses with students: {str(e)}"}
+
+
+@tool
+async def get_students_in_course(teacher_id: str, course_id: str):
+    """
+    Get all students enrolled in a specific course taught by a teacher.
+    
+    Args:
+        teacher_id: The unique identifier of the teacher
+        course_id: The unique identifier of the course
+    """
+    try:
+        # Verify the teacher teaches this course
+        course = await prisma.course.find_first(
+            where={'id': course_id, 'teacherId': teacher_id}
+        )
+        
+        if not course:
+            return {"error": "Course not found or not taught by this teacher"}
+        
+        # Get enrollments
+        enrollments = await prisma.enrollment.find_many(
+            where={'courseId': course_id},
+            include={
+                'student': {
+                    'include': {'user': True}
+                }
+            }
+        )
+        
+        return {
+            "success": True,
+            "course_id": course_id,
+            "course_code": course.courseCode,
+            "course_name": course.courseName,
+            "total_students": len(enrollments),
+            "students": [{
+                "id": e.student.id,
+                "studentId": e.student.studentId,
+                "name": e.student.user.name,
+                "email": e.student.user.email,
+                "department": e.student.department,
+                "semester": e.student.semester,
+                "enrollment_status": e.status,
+                "grade": e.grade
+            } for e in enrollments]
+        }
+    except Exception as e:
+        return {"error": f"Failed to get students in course: {str(e)}"}

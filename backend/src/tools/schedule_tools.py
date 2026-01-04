@@ -183,31 +183,36 @@ async def get_subjects_details():
 
 
 @tool
-async def save_timetable(request: SaveScheduleRequest):
+async def save_timetable(semester: int, section: int, timetable_json: str):
     """
     Save timetable for a specific semester and section.
     
     Args:
-        request (SaveScheduleRequest): An object containing:
-            - semester (int): Semester number (1-4). (required)
-            - section (int): Section number (0-1). (required)
-            - timetable (List[List[Optional[List[str]]]]): 2D array [day][period] where each cell is [teacher, subject, room] or None. (required)
+        semester: Semester number (1-8). (required)
+        section: Section number (0 or 1). (required)
+        timetable_json: JSON string representing the timetable as a 2D array where each cell is [teacher, subject, room] or null. Example: '[[null, ["T1", "CS101", "R1"], null], [null, null, ["T2", "CS102", "R2"]]]' (required)
     
     Use this when user wants to save or update a timetable for a specific semester/section.
     """
+    import json
     service = ScheduleService(prisma)
     try:
+        # Parse the JSON string to the expected format
+        timetable = json.loads(timetable_json)
+        
         success = await service.save_timetable(
-            semester=request.semester,
-            section=request.section,
-            timetable=request.timetable
+            semester=semester,
+            section=section,
+            timetable=timetable
         )
         if success:
             return {
                 "success": True,
-                "message": f"Timetable saved for semester {request.semester}, section {request.section}"
+                "message": f"Timetable saved for semester {semester}, section {section}"
             }
         return {"error": "Failed to save timetable"}
+    except json.JSONDecodeError as e:
+        return {"error": f"Invalid JSON format for timetable: {str(e)}"}
     except Exception as e:
         return {"error": f"Failed to save timetable: {str(e)}"}
 

@@ -247,7 +247,7 @@ export const studentConfig: RoleConfig = {
   navSecondary: [
     {
       title: "Profile",
-      url: "/student/profiles",
+      url: "/student/profile",
       icon: IconUserCircle,
     },
     {

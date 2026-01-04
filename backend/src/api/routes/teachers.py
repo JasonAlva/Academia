@@ -71,10 +71,27 @@ async def get_teacher_courses_with_students(
     courses = await teacher_service.get_teacher_courses_with_students(teacher_id)
     return courses
 
+@router.get("/{teacher_id}/students")
+async def get_students_belongs_to_course(
+    teacher_id: str,course_id:str,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Get all courses taught by a teacher with enrolled students."""
+    teacher_service = TeacherService(prisma)
+    courses = await teacher_service.get_students_belongs_to_course(teacher_id,course_id)
+    return courses
+
 @router.get("/{teacher_id}", response_model=TeacherResponse)
 async def get_teacher(teacher_id: str, current_user: UserResponse = Depends(get_current_user)):
     teacher_service = TeacherService(prisma)
     teacher = await teacher_service.get_teacher(teacher_id)
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+    
+@router.get("/userId/{user_id}", response_model=TeacherResponse)
+async def get_teacher(user_id: str, current_user: UserResponse = Depends(get_current_user)):
+    teacher_service = TeacherService(prisma)
+    teacher = await teacher_service.get_teacher_by_user_id(user_id)
     if not teacher:
         raise HTTPException(status_code=404, detail="Teacher not found")
     return teacher

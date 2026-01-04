@@ -17,6 +17,13 @@ class TeacherService:
             include={"user": True}
         )
         return teacher
+    
+    async def get_teacher_by_user_id(self, user_id: str) -> Optional[Teacher]:
+        teacher = await self.db.teacher.find_unique(
+            where={"userId": user_id},
+            include={"user": True}
+        )
+        return teacher
 
     async def update_teacher(self, teacher_id: str, teacher_data: TeacherUpdate) -> Optional[Teacher]:
         teacher = await self.db.teacher.update(
@@ -77,3 +84,22 @@ class TeacherService:
             order={"semester": "asc"}
         )
         return courses
+    
+    async def get_students_belongs_to_course(self, teacher_id: str, course_id: str):
+        """Get all students enrolled in a specific course taught by a specific teacher."""
+        students = await self.db.student.find_many(
+            where={
+                "enrollments": {
+                    "some": {
+                        "course": {
+                            "id": course_id,
+                            "teacherId": teacher_id,
+                        }
+                    }
+                }
+            },
+            include={
+                "user": True
+            }
+        )
+        return students

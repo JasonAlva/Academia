@@ -119,10 +119,9 @@ class TeacherBase(BaseModel):
     joiningDate: Optional[datetime] = None
 
 class TeacherCreateWithUser(TeacherBase):
-    name:str
-    email:str
-    password:str
-    userId: str = Field(alias="userId")
+    name: str
+    email: str
+    password: str
 
 class TeacherCreate(TeacherBase):
    
@@ -308,7 +307,7 @@ class EnrollmentResponse(BaseModel):
 # Schedule Schemas
 class ScheduleBase(BaseModel):
     course_id: str = Field(alias="courseId")
-    teacherId: str = Field(alias="teacherId")
+    teacherId: Optional[str] = Field(None, alias="teacherId")
     day_of_week: str = Field(alias="dayOfWeek")
     start_time: str = Field(alias="startTime")
     end_time: str = Field(alias="endTime")
@@ -627,7 +626,8 @@ class SubjectsDetailsList(BaseModel):
 class SaveScheduleRequest(BaseModel):
     semester: int
     section: int
-    timetable: List[List[Optional[List[str]]]]
+    timetable: str  # JSON string of List[List[Optional[List[str]]]]
+    departmentId: Optional[str] = None
 
 class GenerateTimeTableRequest(BaseModel):
     pass

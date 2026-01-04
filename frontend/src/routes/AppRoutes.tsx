@@ -34,6 +34,7 @@ import TeachersPage from "@/features/admin/TeachersPage.tsx";
 import EnrollmentsPage from "@/features/admin/EnrollmentsPage";
 
 import StudentsPage from "@/features/admin/StudentsPage";
+import ProfilePage from "@/pages/ProfilePage";
 
 // ----------------------
 // Login Page
@@ -110,6 +111,14 @@ export default function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/student/profile"
+          element={
+            <ProtectedRoute allowed={["student"]}>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* TEACHER ROUTES */}
         <Route
@@ -149,6 +158,14 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute allowed={["teacher"]}>
               <TeacherTimeTablePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/profile"
+          element={
+            <ProtectedRoute allowed={["teacher"]}>
+              <ProfilePage />
             </ProtectedRoute>
           }
         />
@@ -231,6 +248,14 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute allowed={["admin"]}>
               <AdminAttendancePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/profile"
+          element={
+            <ProtectedRoute allowed={["admin"]}>
+              <ProfilePage />
             </ProtectedRoute>
           }
         />

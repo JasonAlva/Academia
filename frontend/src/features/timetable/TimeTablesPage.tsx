@@ -81,6 +81,24 @@ export default function TimeTablesPage() {
     updateCurrentTimeTable();
   }, [currentYear, currentSemester, currentDepartment, allTimeTables]);
 
+  // Reload schedules when department changes
+  useEffect(() => {
+    if (currentDepartment) {
+      loadSchedulesForDepartment(currentDepartment);
+    }
+  }, [currentDepartment]);
+
+  const loadSchedulesForDepartment = async (departmentId: string) => {
+    try {
+      const schedules = await timetableService.getSchedule(departmentId);
+      console.log("Loaded schedules for department:", departmentId, schedules);
+      setAllTimeTables(schedules || []);
+    } catch (error) {
+      console.error("Failed to load schedules for department:", error);
+      toast.error("Failed to load schedules for selected department");
+    }
+  };
+
   const loadInitialData = async () => {
     setLoading(true);
     try {
@@ -92,12 +110,12 @@ export default function TimeTablesPage() {
       // Set first department as default if available
       if (depts && depts.length > 0) {
         setCurrentDepartment(depts[0].id);
-      }
 
-      // Load schedules - structure will be derived from data
-      const schedules = await timetableService.getSchedule();
-      console.log("Loaded schedules:", schedules);
-      setAllTimeTables(schedules || []);
+        // Load schedules for first department
+        const schedules = await timetableService.getSchedule(depts[0].id);
+        console.log("Loaded schedules:", schedules);
+        setAllTimeTables(schedules || []);
+      }
 
       // Load subjects/courses for display
       const courses = await timetableService.getSubjectsDetailsList();
@@ -164,7 +182,11 @@ export default function TimeTablesPage() {
     setShowSelector(true);
   };
 
-  const handlePeriodSet = async (teachers: string[], subject: string, room: string) => {
+  const handlePeriodSet = async (
+    teachers: string[],
+    subject: string,
+    room: string
+  ) => {
     if (!selectedPeriod) return;
 
     const [dayIndex, periodIndex] = selectedPeriod;
@@ -184,7 +206,8 @@ export default function TimeTablesPage() {
       await timetableService.saveSchedule(
         absoluteSemester + 1,
         1, // Using section 1 as default
-        newTimeTable
+        newTimeTable,
+        currentDepartment
       );
 
       // Update both local state and global state
