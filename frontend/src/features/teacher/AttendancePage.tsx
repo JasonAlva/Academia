@@ -26,6 +26,13 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   IconCalendar,
   IconCheck,
   IconX,
@@ -56,6 +63,10 @@ export default function TeacherAttendancePage() {
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
   const [attendanceHistory, setAttendanceHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
+  const [detailedAttendance, setDetailedAttendance] = useState<any[]>([]);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+
   useEffect(() => {
     const fetchTeacherId = async () => {
       if (!user?.id) return;
@@ -128,7 +139,7 @@ export default function TeacherAttendancePage() {
         setLoading(true);
         const data = await teacherService.getStudentsWithCourse(
           teacherId,
-          selectedCourse
+          selectedCourse,
         );
         setStudents(data);
 
@@ -162,7 +173,7 @@ export default function TeacherAttendancePage() {
         // Get all class sessions for teacher's courses
         const sessionsPromises = courses.map(async (course) => {
           const sessions = await attendanceService.getCourseAttendance(
-            course.id
+            course.id,
           );
           return sessions;
         });
@@ -206,12 +217,12 @@ export default function TeacherAttendancePage() {
             percentage:
               stats.total > 0
                 ? (((stats.present + stats.late) / stats.total) * 100).toFixed(
-                    1
+                    1,
                   )
                 : "0",
           }))
           .sort(
-            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
           );
 
         setAttendanceHistory(historyData);
@@ -237,9 +248,8 @@ export default function TeacherAttendancePage() {
       setSaving(true);
 
       // Step 1: Get the course's schedules
-      const schedules = await attendanceService.getCourseSchedules(
-        selectedCourse
-      );
+      const schedules =
+        await attendanceService.getCourseSchedules(selectedCourse);
 
       // Step 2: Find today's schedule
       const now = new Date();
@@ -256,7 +266,7 @@ export default function TeacherAttendancePage() {
 
       // Find schedule matching today's day
       const todaysSchedule = schedules.find(
-        (schedule) => schedule.dayOfWeek === todayDay && schedule.isActive
+        (schedule) => schedule.dayOfWeek === todayDay && schedule.isActive,
       );
 
       // Step 3: Check if there's a class scheduled today
@@ -317,7 +327,7 @@ export default function TeacherAttendancePage() {
       if (courses.length > 0) {
         const sessionsPromises = courses.map(async (course) => {
           const sessions = await attendanceService.getCourseAttendance(
-            course.id
+            course.id,
           );
           return sessions;
         });
@@ -352,12 +362,12 @@ export default function TeacherAttendancePage() {
             percentage:
               stats.total > 0
                 ? (((stats.present + stats.late) / stats.total) * 100).toFixed(
-                    1
+                    1,
                   )
                 : "0",
           }))
           .sort(
-            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
           );
         setAttendanceHistory(historyData);
       }
@@ -377,6 +387,48 @@ export default function TeacherAttendancePage() {
       [studentId]: !prev[studentId],
     }));
   };
+
+  const handleViewDetails = async (record: any) => {
+    setSelectedRecord(record);
+    setDetailsLoading(true);
+
+    try {
+      // Fetch detailed attendance for the specific course and date
+      const courseAttendance = await attendanceService.getCourseAttendance(
+        record.courseId,
+      );
+
+      // Filter records for the specific date
+      const recordDate = new Date(record.date).toISOString().split("T")[0];
+      const detailedRecords = courseAttendance.filter((att: any) => {
+        const attDate = new Date(att.session?.date || att.markedAt)
+          .toISOString()
+          .split("T")[0];
+        return attDate === recordDate;
+      });
+
+      // Format the data for display
+      const formattedDetails = detailedRecords.map((att: any) => ({
+        studentId: att.student?.studentId || "N/A",
+        studentName: att.student?.user?.name || "Unknown",
+        status: att.status,
+        markedAt: att.markedAt,
+      }));
+
+      setDetailedAttendance(formattedDetails);
+    } catch (err) {
+      console.error("Failed to fetch attendance details:", err);
+      toast.error("Failed to load attendance details");
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  const handleCloseDialog = () => {
+    setSelectedRecord(null);
+    setDetailedAttendance([]);
+  };
+
   if (loading) {
     return (
       <div className="flex-1 space-y-4 p-4 md:p-6 lg:p-8">
@@ -552,7 +604,11 @@ export default function TeacherAttendancePage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(record)}
+                        >
                           View Details
                         </Button>
                       </TableCell>
@@ -564,6 +620,113 @@ export default function TeacherAttendancePage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Attendance Details Dialog */}
+      <Dialog open={selectedRecord !== null} onOpenChange={handleCloseDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Attendance Details</DialogTitle>
+            <DialogDescription>
+              {selectedRecord && (
+                <>
+                  <div className="flex items-center gap-2 mt-2">
+                    <IconCalendar className="h-4 w-4" />
+                    {new Date(selectedRecord.date).toLocaleDateString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </div>
+                  <div className="mt-1 text-sm">
+                    Course:{" "}
+                    <span className="font-semibold">
+                      {selectedRecord.courseName}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-sm">
+                    Total Students:{" "}
+                    <span className="font-semibold">
+                      {selectedRecord.total}
+                    </span>{" "}
+                    | Present:{" "}
+                    <span className="font-semibold text-green-600">
+                      {selectedRecord.present}
+                    </span>{" "}
+                    | Absent:{" "}
+                    <span className="font-semibold text-red-600">
+                      {selectedRecord.absent}
+                    </span>
+                  </div>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4">
+            {detailsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Roll No</TableHead>
+                    <TableHead>Student Name</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead>Marked At</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {detailedAttendance.length > 0 ? (
+                    detailedAttendance.map((record, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">
+                          {record.studentId}
+                        </TableCell>
+                        <TableCell>{record.studentName}</TableCell>
+                        <TableCell className="text-center">
+                          {record.status === "PRESENT" ? (
+                            <Badge className="bg-green-500">
+                              <IconCheck className="mr-1 h-3 w-3" />
+                              Present
+                            </Badge>
+                          ) : record.status === "LATE" ? (
+                            <Badge className="bg-yellow-500">
+                              <IconCheck className="mr-1 h-3 w-3" />
+                              Late
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              <IconX className="mr-1 h-3 w-3" />
+                              Absent
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(record.markedAt).toLocaleTimeString()}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center text-muted-foreground"
+                      >
+                        No attendance records found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

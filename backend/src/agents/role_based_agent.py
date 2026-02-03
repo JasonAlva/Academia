@@ -1,12 +1,14 @@
 """
 Role-based agent that dynamically binds tools based on user role.
 Supports ADMIN, TEACHER, and STUDENT roles with appropriate tools and prompts.
+Enhanced with conversation memory and proper tool calling.
 """
 
 from typing import List, Dict, Any
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import SystemMessage
 from langgraph.prebuilt import ToolNode
+from langgraph.checkpoint.memory import MemorySaver
 from src.graph.agent_state import AgentState
 from src.config.llm import llm
 
@@ -380,16 +382,17 @@ Always:
 }
 
 
-def create_role_based_agent(user_role: str = "STUDENT", user_id: str = None):
+def create_role_based_agent(user_role: str = "STUDENT", user_id: str = None, use_checkpointer: bool = True):
     """
     Create an agent with tools and prompts based on user role.
     
     Args:
         user_role: User's role (ADMIN, TEACHER, STUDENT)
         user_id: User's ID for personalized queries (automatically used in tools)
+        use_checkpointer: Whether to use memory checkpointer for conversation persistence
     
     Returns:
-        Compiled LangGraph workflow
+        Compiled LangGraph workflow with optional memory
     """
     # Normalize role
     role = user_role.upper()
@@ -420,6 +423,7 @@ These tools automatically use the current user's ID ({user_id}), so you don't ne
     llm_with_tools = llm.bind_tools(tools)
     
     def call_model(state: AgentState):
+        """Call the LLM with tools and conversation context."""
         messages = state["messages"]
         
         # Always ensure system message is present at the start
@@ -430,12 +434,24 @@ These tools automatically use the current user's ID ({user_id}), so you don't ne
             # Add system message at the beginning
             system_msg = SystemMessage(content=system_prompt)
             messages = [system_msg] + messages
+        else:
+            # Update existing system message with current context
+            messages = list(messages)
+            messages[0] = SystemMessage(content=system_prompt)
         
-        response = llm_with_tools.invoke(messages)
-        return {"messages": [response]}
+        # Invoke LLM with tools
+        try:
+            response = llm_with_tools.invoke(messages)
+            return {"messages": [response]}
+        except Exception as e:
+            print(f"❌ Error calling model: {str(e)}")
+            # Return error message instead of crashing
+            from langchain_core.messages import AIMessage
+            error_msg = AIMessage(content=f"I encountered an error: {str(e)}. Please try rephrasing your question.")
+            return {"messages": [error_msg]}
     
     async def call_tools(state: AgentState):
-        """Custom tool executor that injects user context"""
+        """Custom tool executor that injects user context and handles errors gracefully."""
         last_message = state['messages'][-1]
         
         # Get tool calls from the message
@@ -448,19 +464,29 @@ These tools automatically use the current user's ID ({user_id}), so you don't ne
         from langchain_core.messages import ToolMessage
         tool_messages = []
         
+        print(f"\n🔧 Executing {len(tool_calls)} tool call(s)...")
+        
         for tool_call in tool_calls:
             tool_name = tool_call["name"]
             tool_args = tool_call["args"].copy()
             
+            print(f"  ├─ Tool: {tool_name}")
+            print(f"  │  Args: {tool_args}")
+            
             # Auto-inject user_id and user_role for context-aware tools
-            context_aware_tools = ['get_my_schedule', 'get_my_attendance', 'get_my_courses', 'get_my_profile', 'get_my_teacher_profile']
+            context_aware_tools = [
+                'get_my_schedule', 'get_my_attendance', 'get_my_courses', 
+                'get_my_profile', 'get_my_teacher_profile'
+            ]
             
             if tool_name in context_aware_tools:
                 # Inject user context if not already provided
                 if 'user_id' not in tool_args and user_id:
                     tool_args['user_id'] = user_id
+                    print(f"  │  Auto-injected user_id: {user_id}")
                 if 'user_role' not in tool_args:
                     tool_args['user_role'] = role
+                    print(f"  │  Auto-injected user_role: {role}")
             
             # Find and execute the tool
             tool_to_execute = next((t for t in tools if t.name == tool_name), None)
@@ -468,6 +494,7 @@ These tools automatically use the current user's ID ({user_id}), so you don't ne
             if tool_to_execute:
                 try:
                     result = await tool_to_execute.ainvoke(tool_args)
+                    print(f"  ✓ Success: {str(result)[:100]}...")
                     tool_messages.append(
                         ToolMessage(
                             content=str(result),
@@ -475,23 +502,29 @@ These tools automatically use the current user's ID ({user_id}), so you don't ne
                         )
                     )
                 except Exception as e:
+                    error_msg = f"Error executing {tool_name}: {str(e)}"
+                    print(f"  ✗ Error: {error_msg}")
                     tool_messages.append(
                         ToolMessage(
-                            content=f"Error executing {tool_name}: {str(e)}",
+                            content=error_msg,
                             tool_call_id=tool_call["id"]
                         )
                     )
             else:
+                error_msg = f"Tool {tool_name} not found. Available tools: {[t.name for t in tools[:5]]}..."
+                print(f"  ✗ {error_msg}")
                 tool_messages.append(
                     ToolMessage(
-                        content=f"Tool {tool_name} not found",
+                        content=error_msg,
                         tool_call_id=tool_call["id"]
                     )
                 )
         
+        print(f"\n✓ Completed tool execution\n")
         return {"messages": tool_messages}
     
     def should_continue(state: AgentState):
+        """Determine if we should continue to tools or end."""
         last_message = state['messages'][-1]
         if not hasattr(last_message, 'tool_calls') or not last_message.tool_calls:
             return END
@@ -513,20 +546,30 @@ These tools automatically use the current user's ID ({user_id}), so you don't ne
     
     workflow.add_edge("tools", "agent")
     
-    return workflow.compile()
+    # Compile with or without checkpointer
+    if use_checkpointer:
+        # Use in-memory checkpointer for conversation persistence
+        memory = MemorySaver()
+        compiled_graph = workflow.compile(checkpointer=memory)
+        print(f"✓ Agent compiled with memory checkpointer for role: {role}")
+    else:
+        compiled_graph = workflow.compile()
+        print(f"✓ Agent compiled without memory for role: {role}")
+    
+    return compiled_graph
 
 
 # Convenience functions for specific roles
-def create_admin_agent(user_id: str = None):
+def create_admin_agent(user_id: str = None, use_checkpointer: bool = True):
     """Create an agent with admin privileges"""
-    return create_role_based_agent("ADMIN", user_id)
+    return create_role_based_agent("ADMIN", user_id, use_checkpointer)
 
 
-def create_teacher_agent(user_id: str = None):
+def create_teacher_agent(user_id: str = None, use_checkpointer: bool = True):
     """Create an agent with teacher privileges"""
-    return create_role_based_agent("TEACHER", user_id)
+    return create_role_based_agent("TEACHER", user_id, use_checkpointer)
 
 
-def create_student_agent(user_id: str = None):
+def create_student_agent(user_id: str = None, use_checkpointer: bool = True):
     """Create an agent with student privileges"""
-    return create_role_based_agent("STUDENT", user_id)
+    return create_role_based_agent("STUDENT", user_id, use_checkpointer)

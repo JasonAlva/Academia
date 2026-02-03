@@ -5,9 +5,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Use gemini-1.5-flash or gemini-1.5-pro for reliable tool calling
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
-    temperature=1.0, 
+    temperature=0.0, 
     google_api_key=os.getenv("GOOGLE_API_KEY")
 )
 

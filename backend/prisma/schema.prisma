@@ -25,6 +25,7 @@ model User {
   adminProfile   Admin?
 
   chatMessages ChatMessage[]
+  conversations Conversation[]
 
   @@index([email])
   @@index([role])
@@ -311,6 +312,22 @@ model TeacherAttendance {
 //////////////////////
 // CHAT //
 //////////////////////
+
+model Conversation {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title        String   @default("New Conversation")
+  threadId     String?
+  messages     Json     @default("[]")
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+}
 
 model ChatMessage {
   id           String   @id @default(cuid())

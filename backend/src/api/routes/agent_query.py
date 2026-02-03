@@ -50,10 +50,10 @@ async def query_with_agent(
         # Initialize chat service
         chat_service = ChatService(prisma)
         
-        # Load conversation history if thread_id exists
+        # Load conversation history if thread_id exists (limited to keep context focused)
         conversation_history = []
         if request.thread_id:
-            db_messages = await chat_service.get_messages(thread_id, limit=20)
+            db_messages = await chat_service.get_messages(thread_id, limit=10)
             for msg in db_messages:
                 if msg.role == 'USER':
                     conversation_history.append(HumanMessage(content=msg.content))
@@ -73,13 +73,21 @@ async def query_with_agent(
             thread_id=thread_id
         )
         
-        # Create role-based agent
-        agent = create_role_based_agent(user_role=user_role, user_id=user_id)
+        # Create role-based agent with memory checkpointer
+        agent = create_role_based_agent(user_role=user_role, user_id=user_id, use_checkpointer=True)
         
-        # Execute the query with full conversation history
-        result = await agent.ainvoke({
-            "messages": conversation_history
-        })
+        # Configure the agent with thread_id for conversation persistence
+        config = {
+            "configurable": {
+                "thread_id": thread_id
+            }
+        }
+        
+        # Execute the query with full conversation history and config for checkpointer
+        result = await agent.ainvoke(
+            {"messages": conversation_history},
+            config=config
+        )
         
         # Extract the final response
         final_message = result["messages"][-1]

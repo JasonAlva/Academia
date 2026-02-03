@@ -569,6 +569,30 @@ class ChatMessageResponse(ChatMessageBase):
         from_attributes = True
         populate_by_name = True
 
+# Conversation Schemas
+class ConversationBase(BaseModel):
+    title: str = "New Conversation"
+
+class ConversationCreate(ConversationBase):
+    pass
+
+class ConversationUpdate(BaseModel):
+    title: Optional[str] = None
+    threadId: Optional[str] = None
+    messages: Optional[List[dict]] = None
+
+class ConversationResponse(BaseModel):
+    id: str
+    userId: str
+    title: str
+    threadId: Optional[str] = None
+    messages: List[dict]
+    createdAt: datetime
+    updatedAt: datetime
+    
+    class Config:
+        from_attributes = True
+
 # Authentication Schemas
 class Token(BaseModel):
     access_token: str

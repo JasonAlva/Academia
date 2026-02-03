@@ -13,7 +13,16 @@ from datetime import datetime
 async def get_my_schedule(user_id: str, user_role: str):
     """
     Get MY schedule/timetable automatically based on who I am (teacher or student).
-    Use this when user asks "What is my schedule?", "Show my timetable", "What classes do I have today?".
+    
+    Use this when user asks about THEIR schedule/timetable/classes, such as:
+    - "What is my schedule?"
+    - "Show my schedule" / "Show my schedules"
+    - "Show my timetable" / "Show my timetable"
+    - "What classes do I have?"
+    - "What classes do I have today?"
+    - "When are my classes?"
+    - "What's my teaching schedule?"
+    - "Display my schedule"
     
     Args:
         user_id: The current user's ID (automatically provided)
@@ -78,7 +87,16 @@ async def get_my_schedule(user_id: str, user_role: str):
 async def get_my_attendance(user_id: str, user_role: str, course_id: Optional[str] = None):
     """
     Get MY attendance records automatically based on who I am (teacher or student).
-    Use this when user asks "What is my attendance?", "Show my attendance", "How's my attendance in CS101?".
+    
+    Use this when user asks about THEIR attendance, such as:
+    - "What is my attendance?"
+    - "Show my attendance"
+    - "How's my attendance?"
+    - "What's my attendance percentage?"
+    - "How many classes have I attended?"
+    - "Show attendance for CS101"
+    - "My attendance record"
+    - "Check my attendance"
     
     Args:
         user_id: The current user's ID (automatically provided)
@@ -157,7 +175,15 @@ async def get_my_courses(user_id: str, user_role: str):
     For teachers: courses they teach
     For students: courses they're enrolled in
     
-    Use this when user asks "What courses do I teach?", "What courses am I taking?", "Show my courses".
+    Use this when user asks about THEIR courses, such as:
+    - "What courses do I teach?"
+    - "What courses am I taking?"
+    - "Show my courses"
+    - "List my courses"
+    - "What classes am I teaching?"
+    - "What am I enrolled in?"
+    - "My courses"
+    - "Which courses do I have?"
     
     Args:
         user_id: The current user's ID (automatically provided)
@@ -258,7 +284,17 @@ async def get_my_courses(user_id: str, user_role: str):
 async def get_my_profile(user_id: str, user_role: str):
     """
     Get MY profile information automatically based on who I am.
-    Use this when user asks "Who am I?", "Show my profile", "What's my information?".
+    
+    Use this when user asks about THEIR profile/information, such as:
+    - "Who am I?"
+    - "Show my profile"
+    - "What's my information?"
+    - "My profile"
+    - "My details"
+    - "What's my email?"
+    - "Show my info"
+    - "Tell me about myself"
+    - "My account details"
     
     Args:
         user_id: The current user's ID (automatically provided)
