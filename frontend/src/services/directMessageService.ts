@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://academia-backend-jvoc.onrender.com/api";
 const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000/api";
 
 export interface Teacher {

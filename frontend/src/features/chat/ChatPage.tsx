@@ -45,7 +45,7 @@ export default function ChatPage() {
       try {
         const token = localStorage.getItem("token") || "";
         const res = await fetch(
-          "http://localhost:8000/api/conversations/conversations",
+          "https://academia-backend-jvoc.onrender.com/api/conversations/conversations",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -78,7 +78,7 @@ export default function ChatPage() {
             messages.find((m) => m.role === "user")?.query.substring(0, 40) ||
             "New Conversation";
           await fetch(
-            `http://localhost:8000/api/conversations/conversations/${currentConversationId}`,
+            `https://academia-backend-jvoc.onrender.com/api/conversations/conversations/${currentConversationId}`,
             {
               method: "PUT",
               headers: {
@@ -117,7 +117,7 @@ export default function ChatPage() {
     try {
       const token = localStorage.getItem("token") || "";
       const res = await fetch(
-        "http://localhost:8000/api/conversations/conversations",
+        "https://academia-backend-jvoc.onrender.com/api/conversations/conversations",
         {
           method: "POST",
           headers: {
@@ -152,7 +152,7 @@ export default function ChatPage() {
     try {
       const token = localStorage.getItem("token") || "";
       const res = await fetch(
-        `http://localhost:8000/api/conversations/conversations/${convId}`,
+        `https://academia-backend-jvoc.onrender.com/api/conversations/conversations/${convId}`,
         {
           method: "DELETE",
           headers: {
@@ -191,7 +191,7 @@ export default function ChatPage() {
       try {
         const token = localStorage.getItem("token") || "";
         const res = await fetch(
-          "http://localhost:8000/api/conversations/conversations",
+          "https://academia-backend-jvoc.onrender.com/api/conversations/conversations",
           {
             method: "POST",
             headers: {
@@ -226,7 +226,7 @@ export default function ChatPage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token") || "";
-      const res = await fetch("http://localhost:8000/api/agent/query", {
+      const res = await fetch("https://academia-backend-jvoc.onrender.com/api/agent/query", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

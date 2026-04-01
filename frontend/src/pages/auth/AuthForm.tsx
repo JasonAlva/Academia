@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
 
-const API_URL = "http://localhost:8000/api";
+const API_URL = "https://academia-backend-jvoc.onrender.com/api";
 
 interface AuthFormData {
   email: string;

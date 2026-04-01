@@ -4,7 +4,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Accept backend URL at build time so Vite can bake it into the bundle
-ARG VITE_API_URL=http://localhost:8000/api
+ARG VITE_API_URL=https://academia-backend-jvoc.onrender.com/api
 ENV VITE_API_URL=$VITE_API_URL
 
 COPY package*.json ./
