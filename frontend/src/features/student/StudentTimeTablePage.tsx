@@ -11,7 +11,7 @@ import {
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { timetableService } from "@/services/timeTableService";
-import { useTeacherService } from "@/services/teacherService";
+
 import { useStudentService } from "@/services/studentService";
 
 type PeriodDetails = [string, string, string] | null; // [teacher, subject, room]

@@ -1,4 +1,4 @@
-import { DashboardLayout } from "@/layout";
+
 import {
   Card,
   CardContent,
@@ -56,13 +56,13 @@ export default function TeacherAttendancePage() {
   const [saving, setSaving] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedCourseId, setSelectedCourseId] = useState<string>("");
+  const [_error, setError] = useState<string | null>(null);
+  const [_selectedCourseId, _setSelectedCourseId] = useState<string>("");
   const [selectedCourse, setSelectedCourse] = useState<string>("");
   const [teacherId, setTeacherId] = useState<string>("");
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
   const [attendanceHistory, setAttendanceHistory] = useState<any[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const [_historyLoading, setHistoryLoading] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
   const [detailedAttendance, setDetailedAttendance] = useState<any[]>([]);
   const [detailsLoading, setDetailsLoading] = useState(false);

@@ -13,17 +13,10 @@ import {
   IconClipboardList,
   IconMessages,
   IconSettings,
-  IconHelp,
   IconUserCircle,
-  IconChartBar,
   IconSchool,
   IconClipboardCheck,
-  IconFileText,
   IconBuildingBank,
-  IconReportAnalytics,
-  IconTrophy,
-  IconNotes,
-  IconBell,
   type Icon,
 } from "@tabler/icons-react";
 
