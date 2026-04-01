@@ -26,5 +26,5 @@ RUN python -m prisma generate
 EXPOSE 8000
 
 # Default command (can be overridden by docker-compose)
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "python -m prisma migrate deploy && uvicorn src.main:app --host 0.0.0.0 --port 8000"]
 
