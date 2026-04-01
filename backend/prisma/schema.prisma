@@ -20,6 +20,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  encryptedApiKey String?   // User's personal Google API key (encrypted)
+
   studentProfile Student?
   teacherProfile Teacher?
   adminProfile   Admin?
@@ -50,6 +52,7 @@ model Student {
 
   enrollments Enrollment[]
   attendances StudentAttendance[]
+  directConversations DirectConversation[]
 
   @@index([studentId])
   @@index([department, semester])
@@ -80,6 +83,7 @@ model Teacher {
 
   studentAttendancesMarked StudentAttendance[]
   teacherAttendances       TeacherAttendance[]
+  directConversations      DirectConversation[]
 
   @@index([teacherId])
   @@index([department])
@@ -401,4 +405,52 @@ enum SessionStatus {
 enum ChatRole {
   USER
   ASSISTANT
+}
+
+//////////////////////
+// DIRECT MESSAGING (Teacher-Student) //
+//////////////////////
+
+model DirectConversation {
+  id           String   @id @default(cuid())
+  
+  teacherId    String
+  teacher      Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  studentId    String
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  lastMessageAt DateTime?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  messages     DirectMessage[]
+  
+  @@unique([teacherId, studentId])
+  @@index([teacherId])
+  @@index([studentId])
+  @@index([lastMessageAt])
+}
+
+model DirectMessage {
+  id              String   @id @default(cuid())
+  
+  conversationId  String
+  conversation    DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  senderId        String   // User ID of sender (either teacher or student's user)
+  senderRole      Role     // TEACHER or STUDENT
+  
+  content         String   @db.Text
+  
+  isRead          Boolean  @default(false)
+  readAt          DateTime?
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@index([isRead])
 }

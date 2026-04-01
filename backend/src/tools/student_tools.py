@@ -31,7 +31,7 @@ async def get_student_by_studentId(student_id:str):
     # First try to find by studentId field
     student = await prisma.student.find_first(
         where={"studentId": {"equals": student_id, "mode": "insensitive"}},
-        include={"user": True, "Department": True}
+        include={"user": True}
     )
     
     # If not found by studentId, try by internal id (UUID) as fallback
@@ -44,12 +44,22 @@ async def get_student_by_studentId(student_id:str):
         return {"error": f"Student not found: {student_id}"}
     
     logger.info(f"[STUDENT_TOOL] Found student: {student.user.name} (studentId: {student.studentId})")
+
+    # Optionally resolve human-readable department name from Department model using department code
+    department_name = None
+    if student.department:
+        dept = await prisma.department.find_first(
+            where={"code": {"equals": student.department, "mode": "insensitive"}}
+        )
+        if dept:
+            department_name = dept.name
+
     return {
         "studentId": student.studentId,
         "name": student.user.name,
         "email": student.user.email,
         "department": student.department,
-        "departmentName": student.Department.name if student.Department else None,
+        "departmentName": department_name,
         "semester": student.semester,
         "batch": student.batch,
         "phoneNumber": student.phoneNumber,
@@ -238,23 +248,32 @@ async def update_existing_student(
         
         logger.info(f"[STUDENT_TOOL] Student updated successfully: {updated_student.studentId}")
         
-        # Fetch fresh data with relations
+        # Fetch fresh data with user relation
         fresh_student = await prisma.student.find_unique(
             where={"id": updated_student.id},
-            include={"user": True, "Department": True}
+            include={"user": True}
         )
+
+        # Resolve human-readable department name from Department model using department code
+        department_name = None
+        if fresh_student and fresh_student.department:
+            dept = await prisma.department.find_first(
+                where={"code": {"equals": fresh_student.department, "mode": "insensitive"}}
+            )
+            if dept:
+                department_name = dept.name
         
         return {
-            "studentId": fresh_student.studentId,
-            "name": fresh_student.user.name if fresh_student.user else updated_student.name,
-            "email": fresh_student.user.email if fresh_student.user else None,
-            "department": fresh_student.department,
-            "departmentName": fresh_student.Department.name if fresh_student.Department else None,
-            "semester": fresh_student.semester,
-            "batch": fresh_student.batch,
-            "phoneNumber": fresh_student.phoneNumber,
-            "address": fresh_student.address,
-            "dateOfBirth": fresh_student.dateOfBirth
+            "studentId": fresh_student.studentId if fresh_student else updated_student.studentId,
+            "name": fresh_student.user.name if fresh_student and fresh_student.user else updated_student.name,
+            "email": fresh_student.user.email if fresh_student and fresh_student.user else None,
+            "department": fresh_student.department if fresh_student else updated_student.department,
+            "departmentName": department_name,
+            "semester": fresh_student.semester if fresh_student else updated_student.semester,
+            "batch": fresh_student.batch if fresh_student else updated_student.batch,
+            "phoneNumber": fresh_student.phoneNumber if fresh_student else updated_student.phoneNumber,
+            "address": fresh_student.address if fresh_student else updated_student.address,
+            "dateOfBirth": fresh_student.dateOfBirth if fresh_student else updated_student.dateOfBirth
         }
     except Exception as e:
         logger.error(f"[STUDENT_TOOL] Update failed: {str(e)}")

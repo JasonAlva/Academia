@@ -339,14 +339,13 @@ async def get_my_profile(user_id: str, user_role: str):
         elif user_role == "STUDENT":
             print(f"[CONTEXT_TOOL] Fetching student profile details")
             student = await prisma.student.find_first(
-                where={'userId': user_id},
-                include={'department': True}
+                where={'userId': user_id}
             )
             if student:
                 print(f"[CONTEXT_TOOL] ✅ Found student profile: studentId={student.studentId}, semester={student.semester}")
                 profile.update({
                     "student_id": student.studentId,
-                    "department": student.department.name if student.department else student.department,
+                    "department": student.department,
                     "semester": student.semester,
                     "batch": student.batch,
                     "phone": student.phoneNumber,

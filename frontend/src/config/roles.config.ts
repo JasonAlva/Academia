@@ -185,6 +185,11 @@ export const teacherConfig: RoleConfig = {
       url: "/teacher/schedules",
       icon: IconCalendar,
     },
+    {
+      title: "Messages",
+      url: "/teacher/messages",
+      icon: IconMessages,
+    },
   ],
 
   navSecondary: [
@@ -242,6 +247,11 @@ export const studentConfig: RoleConfig = {
         { title: "Attendance History", url: "/student/attendance/history" },
       ],
     },
+    {
+      title: "Messages",
+      url: "/student/messages",
+      icon: IconMessages,
+    },
   ],
 
   navSecondary: [
@@ -291,7 +301,7 @@ export interface DashboardConfig extends RoleConfig {
 
 export const getDashboardConfig = (
   role: UserRole,
-  user: DashboardConfig["user"]
+  user: DashboardConfig["user"],
 ): DashboardConfig => {
   return {
     ...getRoleConfig(role),

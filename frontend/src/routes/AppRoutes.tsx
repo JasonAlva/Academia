@@ -22,18 +22,21 @@ import TeacherCoursesPage from "@/features/teacher/CoursesPage";
 import TeacherAttendancePage from "@/features/teacher/AttendancePage";
 import TeacherStudentPage from "@/features/teacher/StudentsPage.tsx";
 import TeacherTimeTablePage from "@/features/teacher/TimeTablePage.tsx";
+import TeacherMessagePage from "@/features/teacher/MessagePage.tsx";
 
 // Import Student Feature Pages
 import StudentCoursesPage from "@/features/student/CoursesPage";
 import StudentSchedulePage from "@/features/student/StudentTimeTablePage.tsx";
-import StudentGradesPage from "@/features/student/GradesPage";
+
 import StudentAttendancePage from "@/features/student/StudentAttendancePage";
+import StudentMessagePage from "@/features/student/MessagePage.tsx";
+
 import DashboardRoutes from "@/layout/DashboardRoutes.tsx";
 import TimeTablesPage from "@/features/timetable/TimeTablesPage.tsx";
 import TeachersPage from "@/features/admin/TeachersPage.tsx";
 import EnrollmentsPage from "@/features/admin/EnrollmentsPage";
 
-import StudentsPage from "@/features/admin/StudentsPage";
+
 import ProfilePage from "@/pages/ProfilePage";
 
 // ----------------------
@@ -119,6 +122,14 @@ export default function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/student/messages"
+          element={
+            <ProtectedRoute allowed={["student"]}>
+              <StudentMessagePage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* TEACHER ROUTES */}
         <Route
@@ -166,6 +177,14 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute allowed={["teacher"]}>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/messages"
+          element={
+            <ProtectedRoute allowed={["teacher"]}>
+              <TeacherMessagePage />
             </ProtectedRoute>
           }
         />

@@ -16,6 +16,35 @@ from src.models.schemas import (
 from src.config.database import prisma
 
 
+# ==================== INTERNAL HELPERS ====================
+
+async def _resolve_teacher_id(marked_by_id: Optional[str]) -> Optional[str]:
+    """Resolve a teacher's internal ID from either a Teacher.id or a User.id.
+
+    Tools often receive the authenticated user's ID; the attendance service,
+    however, expects a Teacher.id for the markedBy relation. This helper
+    converts whatever we get into the correct Teacher.id when possible.
+    """
+    if not marked_by_id:
+        return None
+
+    # First, assume it's already a Teacher.id
+    teacher = await prisma.teacher.find_unique(
+        where={"id": marked_by_id}
+    )
+    if teacher is not None:
+        return teacher.id
+
+    # Fallback: treat it as a User.id and resolve the teacher profile
+    teacher = await prisma.teacher.find_first(
+        where={"userId": marked_by_id}
+    )
+    if teacher is not None:
+        return teacher.id
+
+    return None
+
+
 # ==================== CLASS SESSION TOOLS ====================
 
 @tool
@@ -178,6 +207,9 @@ async def mark_student_attendance(
         date_obj = datetime.fromisoformat(date) if date else datetime.now()
         print(f"[ATTENDANCE_TOOL] Using date: {date_obj}")
         
+        # Resolve the teacher who is marking attendance (from teacher.id or user.id)
+        resolved_teacher_id = await _resolve_teacher_id(marked_by_id) if marked_by_id else None
+
         # Find or create session for this course and date
         print(f"[ATTENDANCE_TOOL] Looking for existing session...")
         existing_sessions = await AttendanceService.get_course_sessions(course.id, date_obj, prisma)
@@ -190,7 +222,7 @@ async def mark_student_attendance(
             # Create new session
             session_data = ClassSessionCreate(
                 courseId=course.id,
-                teacherId=course.teacherId or marked_by_id,
+                teacherId=course.teacherId or resolved_teacher_id,
                 date=date_obj,
                 startTime="09:00 AM",
                 endTime="10:00 AM",
@@ -208,9 +240,14 @@ async def mark_student_attendance(
             remarks=remarks
         )
         
+        teacher_for_marking = resolved_teacher_id or session.teacherId
+        if not teacher_for_marking:
+            print("[ATTENDANCE_TOOL] ❌ No teacher found to mark attendance")
+            return {"error": "No teacher found to mark attendance for this session"}
+
         attendance_record = await AttendanceService.mark_attendance(
-            attendance_data, 
-            marked_by_id or session.teacherId, 
+            attendance_data,
+            teacher_for_marking,
             prisma
         )
         print(f"[ATTENDANCE_TOOL] ✅ Marked attendance: {attendance_record.id}")
@@ -255,6 +292,9 @@ async def bulk_mark_student_attendance(
             return {"error": f"Course not found with code: {course_code}"}
         print(f"[ATTENDANCE_TOOL] ✅ Found course: {course.courseName} (ID: {course.id})")
         
+        # Resolve the teacher who is marking attendance (from teacher.id or user.id)
+        resolved_teacher_id = await _resolve_teacher_id(marked_by_id) if marked_by_id else None
+
         # Parse date or use today
         date_obj = datetime.fromisoformat(date) if date else datetime.now()
         print(f"[ATTENDANCE_TOOL] Using date: {date_obj}")
@@ -271,7 +311,7 @@ async def bulk_mark_student_attendance(
             # Create new session
             session_data = ClassSessionCreate(
                 courseId=course.id,
-                teacherId=course.teacherId or marked_by_id,
+                teacherId=course.teacherId or resolved_teacher_id,
                 date=date_obj,
                 startTime="09:00 AM",
                 endTime="10:00 AM",
@@ -311,9 +351,15 @@ async def bulk_mark_student_attendance(
                 )
         
         print(f"[ATTENDANCE_TOOL] Marking bulk attendance for {len(attendance_list)} students...")
+
+        teacher_for_marking = resolved_teacher_id or session.teacherId
+        if not teacher_for_marking:
+            print("[ATTENDANCE_TOOL] ❌ No teacher found to mark attendance")
+            return {"error": "No teacher found to mark attendance for this session"}
+
         records = await AttendanceService.bulk_mark_attendance(
-            attendance_list, 
-            marked_by_id or session.teacherId, 
+            attendance_list,
+            teacher_for_marking,
             prisma
         )
         print(f"[ATTENDANCE_TOOL] ✅ Successfully marked attendance for {len(records)} students")

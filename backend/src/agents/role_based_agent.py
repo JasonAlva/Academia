@@ -10,7 +10,7 @@ from langchain_core.messages import SystemMessage
 from langgraph.prebuilt import ToolNode
 from langgraph.checkpoint.memory import MemorySaver
 from src.graph.agent_state import AgentState
-from src.config.llm import llm
+from src.config.llm import get_llm
 
 # Import all available tools
 from src.tools.department_tools import (
@@ -382,27 +382,34 @@ Always:
 }
 
 
-def create_role_based_agent(user_role: str = "STUDENT", user_id: str = None, use_checkpointer: bool = True):
+def create_role_based_agent(
+    user_role: str = "STUDENT",
+    user_id: str = None,
+    use_checkpointer: bool = True,
+    api_key: str | None = None,
+):
     """
     Create an agent with tools and prompts based on user role.
-    
+
     Args:
         user_role: User's role (ADMIN, TEACHER, STUDENT)
         user_id: User's ID for personalized queries (automatically used in tools)
         use_checkpointer: Whether to use memory checkpointer for conversation persistence
-    
+        api_key: Optional Google API key to use for this request (user's own key).
+                 Falls back to the GOOGLE_API_KEY env var if not provided.
+
     Returns:
         Compiled LangGraph workflow with optional memory
     """
     # Normalize role
     role = user_role.upper()
-    
+
     # Get tools for this role
     tools = ROLE_TOOLS.get(role, ROLE_TOOLS["STUDENT"])  # Default to STUDENT if unknown
-    
+
     # Get system prompt for this role
     system_prompt = ROLE_PROMPTS.get(role, ROLE_PROMPTS["STUDENT"])
-    
+
     # Enhanced system prompt with user context and natural language guidance
     if user_id:
         system_prompt += f"""
@@ -418,9 +425,12 @@ def create_role_based_agent(user_role: str = "STUDENT", user_id: str = None, use
 - "Show my profile" → Use get_my_profile
 
 These tools automatically use the current user's ID ({user_id}), so you don't need to ask for IDs when users ask about themselves."""
-    
+
+    # Build LLM — raises ValueError if no API key is available
+    llm_instance = get_llm(api_key)
+
     # Bind tools to LLM
-    llm_with_tools = llm.bind_tools(tools)
+    llm_with_tools = llm_instance.bind_tools(tools)
     
     def call_model(state: AgentState):
         """Call the LLM with tools and conversation context."""

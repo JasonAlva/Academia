@@ -5,7 +5,7 @@ export type DaySchedule = (PeriodDetails | null)[];
 
 export type TimeTableType = (DaySchedule | null)[];
 
-export type FullTimeTable = TimeTableType[][]; // [semester][section][day][period]
+export type FullTimeTable = TimeTableType[]; // [semester][day][period]
 
 export interface TimeTableStructure {
   breaksPerSemester: number[][]; // Break positions for each semester

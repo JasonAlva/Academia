@@ -225,6 +225,8 @@ export default function AuthForm() {
         email: authForm.email,
         password: authForm.password,
       };
+      console.log(payload.password);
+      
 
       if (authMode === "register") {
         payload = {

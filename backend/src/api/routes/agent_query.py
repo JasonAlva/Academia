@@ -6,18 +6,42 @@ from src.api.dependencies import get_current_user
 from src.models.schemas import UserResponse
 from src.services.chat_services import ChatService
 from src.config.database import prisma
+from src.utils.encryption import decrypt_api_key
+import os
 from typing import Optional
 import uuid
 
 router = APIRouter()
 
+
 class QueryRequest(BaseModel):
     query: str
     thread_id: Optional[str] = None  # For conversation continuity
 
+
 class QueryResponse(BaseModel):
     answer: str
     thread_id: str  # Return thread_id for session continuity
+
+
+async def _resolve_api_key(user_id: str) -> str | None:
+    """
+    Get the effective Google API key for the current request.
+
+    Priority:
+      1. User's own encrypted key stored in DB
+      2. Server-level GOOGLE_API_KEY env var
+      3. None  →  agent factory will raise a clear error
+    """
+    try:
+        user = await prisma.user.find_unique(where={"id": user_id})
+        if user and user.encryptedApiKey:
+            return decrypt_api_key(user.encryptedApiKey)
+    except Exception as e:
+        print(f"⚠️  Could not decrypt user API key: {e}")
+
+    return os.getenv("GOOGLE_API_KEY") or None
+
 
 @router.post("/query", response_model=QueryResponse)
 async def query_with_agent(
@@ -28,15 +52,16 @@ async def query_with_agent(
     Process user query with role-based agent with conversation memory.
     The agent will have access to tools based on the user's role (ADMIN, TEACHER, STUDENT).
     Maintains conversation history across requests using thread_id.
+    Uses the user's personal Google API key if saved, otherwise falls back to the server key.
     """
     try:
         # Extract user information from UserResponse object
         user_id = current_user.id
         user_role = current_user.role  # role is a property of UserResponse
-        
+
         # Get or create thread_id for conversation continuity
         thread_id = request.thread_id or str(uuid.uuid4())
-        
+
         print(f"\n{'='*60}")
         print(f"AGENT QUERY")
         print(f"{'='*60}")
@@ -46,10 +71,24 @@ async def query_with_agent(
         print(f"Thread ID: {thread_id}")
         print(f"Query: {request.query}")
         print(f"{'='*60}\n")
-        
+
+        # Resolve the API key to use for this request
+        api_key = await _resolve_api_key(user_id)
+        if api_key:
+            print(f"🔑 API key source: {'user-saved key' if True else 'server env'}")
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "No Google API key configured. "
+                    "Please go to Profile → AI Settings and add your Google API key, "
+                    "or ask the administrator to configure a server-level key."
+                ),
+            )
+
         # Initialize chat service
         chat_service = ChatService(prisma)
-        
+
         # Load conversation history if thread_id exists (limited to keep context focused)
         conversation_history = []
         if request.thread_id:
@@ -60,11 +99,11 @@ async def query_with_agent(
                 elif msg.role == 'ASSISTANT':
                     conversation_history.append(AIMessage(content=msg.content))
             print(f"📚 Loaded {len(conversation_history)} messages from conversation history")
-        
+
         # Add current user message to history
         current_message = HumanMessage(content=request.query)
         conversation_history.append(current_message)
-        
+
         # Save user message to database
         await chat_service.create_message(
             user_id=user_id,
@@ -72,32 +111,37 @@ async def query_with_agent(
             content=request.query,
             thread_id=thread_id
         )
-        
-        # Create role-based agent with memory checkpointer
-        agent = create_role_based_agent(user_role=user_role, user_id=user_id, use_checkpointer=True)
-        
+
+        # Create role-based agent with memory checkpointer and the resolved API key
+        agent = create_role_based_agent(
+            user_role=user_role,
+            user_id=user_id,
+            use_checkpointer=True,
+            api_key=api_key,
+        )
+
         # Configure the agent with thread_id for conversation persistence
         config = {
             "configurable": {
                 "thread_id": thread_id
             }
         }
-        
+
         # Execute the query with full conversation history and config for checkpointer
         result = await agent.ainvoke(
             {"messages": conversation_history},
             config=config
         )
-        
+
         # Extract the final response
         final_message = result["messages"][-1]
-        
+
         answer = (
             final_message.content
             if isinstance(final_message.content, str)
             else final_message.content[0]["text"]
         )
-        
+
         # Save assistant response to database
         await chat_service.create_message(
             user_id=user_id,
@@ -108,11 +152,16 @@ async def query_with_agent(
 
         print(f"Agent Response: {answer[:200]}...")  # Log first 200 chars
         print(f"💾 Saved conversation to thread: {thread_id}\n")
-        
+
         return QueryResponse(answer=answer, thread_id=thread_id)
-        
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        # get_llm() raises ValueError when no key is available
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         print(f"❌ Error processing query: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")

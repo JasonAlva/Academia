@@ -20,6 +20,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 def verify_token(token: str) -> Dict[str, Any]:
     
     try:
+        print("hello",token)
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
       
         

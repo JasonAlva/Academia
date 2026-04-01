@@ -206,10 +206,10 @@ async def get_my_teacher_profile(user_id: str):
     """
     try:
         print(f"[TOOL] get_my_teacher_profile: Fetching profile for user_id '{user_id}'")
-        # Find teacher by user ID
+        # Find teacher by user ID; department is a scalar field, not a relation
         teacher = await prisma.teacher.find_first(
             where={'userId': user_id},
-            include={'user': True, 'department': True}
+            include={'user': True}
         )
         
         if not teacher:
@@ -231,20 +231,26 @@ async def get_teacher_courses(teacher_id: str):
         teacher_id: The teacher ID (e.g., T001, T002) of the teacher
     """
     try:
-        print(f"[TOOL] get_teacher_courses: Fetching courses for teacher '{teacher_id}'")
-        # Find teacher by teacherId (e.g., T001)
+        print(f"[TOOL] get_teacher_courses: Fetching courses for teacher identifier '{teacher_id}'")
+        # Try resolving teacher_id as teacherId (e.g., T001), then as internal teacher ID, then as user ID
         teacher = await prisma.teacher.find_first(
             where={'teacherId': teacher_id}
         )
-        
+
         if not teacher:
-            print(f"[TOOL] get_teacher_courses: Not found by teacherId, trying database ID")
-            # Try by database ID as fallback
+            print(f"[TOOL] get_teacher_courses: Not found by teacherId, trying teacher database ID")
             teacher = await prisma.teacher.find_unique(
                 where={'id': teacher_id}
             )
-        else:
-            print(f"[TOOL] get_teacher_courses: Found teacher by teacherId '{teacher_id}'")
+
+        if not teacher:
+            print(f"[TOOL] get_teacher_courses: Not found by teacher database ID, trying user ID")
+            teacher = await prisma.teacher.find_first(
+                where={'userId': teacher_id}
+            )
+
+        if teacher:
+            print(f"[TOOL] get_teacher_courses: Resolved teacher identifier to teacherId '{teacher.teacherId}' (db id: {teacher.id})")
         
         if not teacher:
             print(f"[TOOL] get_teacher_courses: ERROR - Teacher '{teacher_id}' not found")
@@ -361,23 +367,28 @@ async def get_students_in_course(teacher_id: str, course_id: str):
         course_id: The course code (e.g., CS101) or database ID of the course
     """
     try:
-        print(f"[TOOL] get_students_in_course: Fetching students for course '{course_id}' taught by teacher '{teacher_id}'")
-        # Find teacher by teacherId (e.g., T001)
+        print(f"[TOOL] get_students_in_course: Fetching students for course '{course_id}' taught by identifier '{teacher_id}'")
+        # Resolve teacher identifier: try teacherId (e.g., T001), then internal teacher ID, then user ID
         teacher = await prisma.teacher.find_first(
             where={'teacherId': teacher_id}
         )
-        
+
         if not teacher:
-            print(f"[TOOL] get_students_in_course: Not found by teacherId, trying database ID")
-            # Try by database ID as fallback
+            print(f"[TOOL] get_students_in_course: Not found by teacherId, trying teacher database ID")
             teacher = await prisma.teacher.find_unique(
                 where={'id': teacher_id}
             )
-        else:
-            print(f"[TOOL] get_students_in_course: Found teacher by teacherId '{teacher_id}'")
-        
+
         if not teacher:
-            print(f"[TOOL] get_students_in_course: ERROR - Teacher '{teacher_id}' not found")
+            print(f"[TOOL] get_students_in_course: Not found by teacher database ID, trying user ID")
+            teacher = await prisma.teacher.find_first(
+                where={'userId': teacher_id}
+            )
+
+        if teacher:
+            print(f"[TOOL] get_students_in_course: Resolved teacher identifier to teacherId '{teacher.teacherId}' (db id: {teacher.id})")
+        else:
+            print(f"[TOOL] get_students_in_course: ERROR - Teacher identifier '{teacher_id}' could not be resolved")
             return {"error": f"Teacher with ID '{teacher_id}' not found"}
         
         # Find course by courseCode first (e.g., CS101)

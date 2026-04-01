@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -15,8 +16,10 @@ from src.api.routes import (
     teachers,
     users,
     agent_query,
-    conversations
+    conversations,
+    direct_messages
 )
+from src.api.routes import api_key_routes
 from src.middleware.error_handler import error_handler
 
 @asynccontextmanager
@@ -34,15 +37,19 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS
+# Configure CORS - reads FRONTEND_URL from environment for production
+frontend_url = os.getenv("FRONTEND_URL", "")
+allowed_origins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3000",
+]
+if frontend_url:
+    allowed_origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:3000",
-        "*"  # Remove in production
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -62,6 +69,8 @@ app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendanc
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(conversations.router, prefix="/api/conversations", tags=["Conversations"])
 app.include_router(agent_query.router, prefix="/api/agent", tags=["agent"])
+app.include_router(direct_messages.router, prefix="/api/messages", tags=["Direct Messages"])
+app.include_router(api_key_routes.router, prefix="/api/settings/api-key", tags=["Settings"])
 
 # Root endpoint
 @app.get("/")
