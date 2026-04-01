@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://academia-backend-jvoc.onrender.com/api";
 
 export const useApiClient = () => {
   const request = async (endpoint: string, options: RequestInit = {}) => {

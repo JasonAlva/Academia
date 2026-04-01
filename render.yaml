@@ -31,9 +31,10 @@ services:
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
     envVars:
-      # Render passes this env var into `docker build --build-arg VITE_API_URL=...`
-      # because the Dockerfile declares `ARG VITE_API_URL`.
-      # After first deploy, set this to your backend URL + /api:
+      # Render injects this as a runtime env var into the container.
+      # The entrypoint.sh script in the Dockerfile sed-replaces the
+      # __VITE_API_URL_PLACEHOLDER__ string in the built JS bundle at startup.
+      # Set this to your backend URL + /api:
       #   e.g. https://dbms-backend.onrender.com/api
       - key: VITE_API_URL
         sync: false
